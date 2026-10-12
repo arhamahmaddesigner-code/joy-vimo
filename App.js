@@ -14,6 +14,7 @@ import ScheduleEditor from './components/ScheduleEditor';
 import DomainRulesPanel from './components/DomainRulesPanel';
 import OfflineActivities from './components/OfflineActivities';
 import AdultLeaderboard from './components/AdultLeaderboard';
+import {joySupabase} from './lib/joySupabase';
 import {computeProgress} from './lib/progress';
 const purple='#6737F5',deep='#21134C',white='#FFFFFF',bg='#F7F5FF',muted='#716C8A',mint='#16B99D';
 const APPS=[['Instagram','IG','#FCE8F4'],['TikTok','TK','#EAE8F5'],['YouTube','YT','#FFE9EA'],['Chrome','WEB','#E3F3FF']];
@@ -39,7 +40,15 @@ function AppMain(){
  useEffect(()=>{if(data.age)refresh()},[data.age,tab]);
  useEffect(()=>{const l=AppState.addEventListener('change',x=>{if(x==='active')refresh()});return()=>l.remove()},[data.age]);
  useEffect(()=>{if(!playing)return;const id=setInterval(()=>setBreath(x=>{if(x<=1){setPlaying(false);return 0}return x-1}),1000);return()=>clearInterval(id)},[playing]);
- function reward(id,xp){const result=claimAction(data,id,xp);if(!result.awarded){Alert.alert('Already earned','This daily reward is already claimed.');return}setData(result.state);Alert.alert('Small win!','+'+xp+' XP earned. Keep going at your own pace.')}
+ function reward(id,xp){const result=claimAction(data,id,xp);if(!result.awarded){Alert.alert('Already earned','This daily reward is already claimed.');return}setData(result.state);Alert.alert('Small win!','+'+xp+' XP earned. Keep going at your own pace.');
+   // Opt-in adult profile only. Failed network calls never affect local rewards.
+   if(data.age==='adult'&&joySupabase){(async()=>{
+     try{const {data:{session}}=await joySupabase.auth.getSession();if(!session)return;
+       const {data:profile}=await joySupabase.from('joy_public_profiles').select('visible').eq('user_id',session.user.id).maybeSingle();
+       if(profile?.visible)await joySupabase.rpc('joy_claim_positive_action',{p_action_key:id});
+     }catch{} })();
+   }
+ }
  function strictActive(){try{return Number(native.current?.getFocusStatus?.()?.strictUntil||0)>Date.now()}catch{return false}}
  function changeRule(n,p){if(strictActive()){Alert.alert('Commitment active','Rule edits are temporarily locked. Emergency pause and Stop remain available in Focus Shield.');return}setData(x=>({...x,rules:{...x.rules,[n]:{...x.rules[n],...p}}}))}
  useEffect(()=>{if(!ready||data.age==='kid'||!native.current)return;
