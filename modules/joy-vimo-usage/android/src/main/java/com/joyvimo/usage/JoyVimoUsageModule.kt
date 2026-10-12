@@ -150,7 +150,22 @@ class JoyVimoUsageModule : Module() {
       }
       val scheduleInput=json.optJSONObject("schedules")?:JSONObject()
       val safeSchedules=JSONObject()
-      for(name in listOf("Sleep","Study","Me time"))safeSchedules.put(name,scheduleInput.optBoolean(name,false))
+      for(name in listOf("Sleep","Study","Me time")){
+        val raw=scheduleInput.opt(name)
+        val defaults=when(name){"Sleep"->"22:00" to "07:00";"Study"->"16:00" to "18:00";else->"20:00" to "21:00"}
+        val entry=raw as? JSONObject
+        val start=entry?.optString("start")?.takeIf{Regex("^(?:[01][0-9]|2[0-3]):[0-5][0-9]$").matches(it)}?:defaults.first
+        val end=entry?.optString("end")?.takeIf{Regex("^(?:[01][0-9]|2[0-3]):[0-5][0-9]$").matches(it)}?:defaults.second
+        val days=org.json.JSONArray()
+        val inputDays=entry?.optJSONArray("days")
+        if(inputDays==null){for(d in 0..6)days.put(d)}
+        else for(i in 0 until minOf(inputDays.length(),7)){
+          val d=inputDays.optInt(i,-1)
+          if(d in 0..6 && (0 until days.length()).none{days.optInt(it)==d})days.put(d)
+        }
+        val enabled=entry?.optBoolean("enabled",false)?:scheduleInput.optBoolean(name,false)
+        safeSchedules.put(name,JSONObject().put("enabled",enabled&&start!=end).put("start",start).put("end",end).put("days",days))
+      }
       val allowed=JSONObject()
       for(name in listOf("Instagram","TikTok","YouTube","Chrome")){
         val rule=given.optJSONObject(name)?:JSONObject()
