@@ -81,6 +81,7 @@ class JoyVimoUsageModule : Module() {
       "serviceEnabled" to enabled.split(":").any{it.equals(component,ignoreCase=true)},
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
+      "safetyPauseUntil" to p.getLong("safety_pause_until",0L),
       "youtubeShorts" to p.getBoolean("youtube_shorts",false),
       "instagramReels" to p.getBoolean("instagram_reels",false),
       "tiktokFeed" to p.getBoolean("tiktok_feed",false),
@@ -109,6 +110,17 @@ class JoyVimoUsageModule : Module() {
     AsyncFunction("openNetworkSettings"){
       context().startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+    AsyncFunction("pauseFocusSafely"){minutes:Int ->
+      val bounded=minutes.coerceIn(1,60)
+      context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+        .edit().putLong("safety_pause_until",System.currentTimeMillis()+bounded*60000L).apply()
+      true
+    }
+    AsyncFunction("clearSafetyPause"){
+      context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+        .edit().remove("safety_pause_until").apply()
+      true
     }
     AsyncFunction("clearFocusConfig"){
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
@@ -147,6 +159,7 @@ class JoyVimoUsageModule : Module() {
           put("opens",rule.optInt("opens",3).coerceIn(1,30))
           put("minutes",rule.optInt("minutes",30).coerceIn(1,600))
           put("session",rule.optInt("session",10).coerceIn(1,120))
+          put("delay",rule.optInt("delay",0).coerceIn(0,30))
         })
       }
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
