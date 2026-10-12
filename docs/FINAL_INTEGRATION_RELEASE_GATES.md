@@ -29,3 +29,12 @@ Dedicated backend approval -> private opt-in auth/leaderboard integration -> gen
 ## External data boundaries
 Do not migrate existing ORYX Development financial/business data or services.
 Never upload sexual or intimate browsing history, passwords, SMS, contacts, view text, video content or exact Chrome URLs.
+
+
+## 2026-10-13 JOY VIMO isolated backend verified
+- Dedicated JOY VIMO Supabase project `hhrpwnsyfrdcrnusahkd` in separate JOY VIMO organization; status ACTIVE_HEALTHY, Singapore region.
+- Adult leaderboard migration successfully deployed on this project only. Both leaderboard tables have RLS enabled.
+- Public publishable client key/endpoint wired in `lib/joySupabase.js`. **Do not ever add service-role or secret credentials to the APK.**
+- Supabase security advisor shows five expected authenticated-callable SECURITY DEFINER RPC warnings; review capabilities and guardrails before multiuser public release. RLS and permissions alone are not proof of safety.
+- Email OTP delivery, live account flow, anonymous access resistance, cross-user data isolation, leaderboard calculations, age verification and client APK integration **not yet end-to-end tested**.
+- ORYX Development database was not modified.
