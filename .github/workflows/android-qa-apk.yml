@@ -31,7 +31,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - name: Inspect preinstalled Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -lah "$ANDROID_HOME" || true
+          test -d "$ANDROID_HOME/platforms"
       - name: Install project dependencies
         run: npm install --no-audit --no-fund
       - name: Match Expo SDK versions
