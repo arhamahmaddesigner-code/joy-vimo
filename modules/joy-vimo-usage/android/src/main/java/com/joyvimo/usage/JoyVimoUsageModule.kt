@@ -82,6 +82,7 @@ class JoyVimoUsageModule : Module() {
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
       "lastBlockedApp" to (p.getString("last_blocked","")?:""),
+      "lastReason" to (p.getString("last_reason","")?:""),
       "lastBlockedAt" to p.getLong("last_blocked_at",0L),
       "instagramBlocks" to p.getInt("blocks_com.instagram.android",0),
       "tiktokBlocks" to p.getInt("blocks_com.zhiliaoapp.musically",0),
@@ -103,6 +104,9 @@ class JoyVimoUsageModule : Module() {
       val consent=json.optBoolean("consented",false)&&age!="kid"
       val active=consent&&json.optBoolean("enforcing",false)
       val given=json.optJSONObject("rules")?:JSONObject()
+      val scheduleInput=json.optJSONObject("schedules")?:JSONObject()
+      val safeSchedules=JSONObject()
+      for(name in listOf("Sleep","Study","Me time"))safeSchedules.put(name,scheduleInput.optBoolean(name,false))
       val allowed=JSONObject()
       for(name in listOf("Instagram","TikTok","YouTube","Chrome")){
         val rule=given.optJSONObject(name)?:JSONObject()
@@ -110,11 +114,13 @@ class JoyVimoUsageModule : Module() {
           put("enabled",rule.optBoolean("enabled",false))
           put("opens",rule.optInt("opens",3).coerceIn(1,30))
           put("minutes",rule.optInt("minutes",30).coerceIn(1,600))
+          put("session",rule.optInt("session",10).coerceIn(1,120))
         })
       }
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
         .edit().putString("age",age).putBoolean("consented",consent)
-        .putBoolean("enforcing",active).putString("rules",allowed.toString()).apply()
+        .putBoolean("enforcing",active).putString("rules",allowed.toString())
+        .putString("schedules",safeSchedules.toString()).apply()
       true
     }
     AsyncFunction("openUsageSettings"){
