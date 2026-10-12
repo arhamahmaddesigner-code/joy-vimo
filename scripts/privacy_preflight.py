@@ -46,6 +46,11 @@ must("android.permission.BIND_ACCESSIBILITY_SERVICE" in manifest,"Accessibility 
 must("Accessibility" in (root/"components/FocusControl.js").read_text(),"Consent UI must explain Accessibility")
 must("workflow_dispatch:" in workflow and "\n  push:" not in workflow,"APK workflow must stay manual-only")
 must(app_cfg["expo"]["android"]["package"]=="com.joyvimo.app","QA package ID unexpectedly changed")
+must("OfflineActivities" in app and "computeProgress" in app,"Offline activity and local progress flows required")
+must("tests/progress.test.cjs" in workflow,"Progress regression checks required")
+must("withPrivateAndroidSettings" in app_cfg["expo"].get("plugins",[])[0],"Android backup privacy plugin missing")
+plugin=(root/"plugins/withPrivateAndroidSettings.js").read_text()
+must("android:allowBackup" in plugin and "'false'" in plugin,"Android backup must be disabled")
 must("expo" in package["dependencies"],"Missing Expo dependency")
 for hazard in ["READ_SMS","READ_CONTACTS","QUERY_ALL_PACKAGES","REQUEST_INSTALL_PACKAGES","READ_CALL_LOG"]:
     must(hazard not in manifest,"Unexpected sensitive permission in manifest: "+hazard)
