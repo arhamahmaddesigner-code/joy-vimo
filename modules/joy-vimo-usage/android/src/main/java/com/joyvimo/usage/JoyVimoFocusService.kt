@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
@@ -55,6 +56,7 @@ class JoyVimoFocusService : AccessibilityService() {
   private var enteredAtMs=0L
   private var lastEntryMs=0L
   private var lastRedirectMs=0L
+  private var lastPauseLaunchMs=0L
   private var lastScanMs=0L
   private var lastInstagramScanMs=0L
   private var lastTiktokScanMs=0L
@@ -118,6 +120,9 @@ class JoyVimoFocusService : AccessibilityService() {
   private fun recordOpening(pkg:String,now:Long) {
     val name=tracked[pkg]?:return
     if(!isActive())return
+    val safetyUntil=prefs.getLong("safety_pause_until",0L)
+    if(now<safetyUntil)return
+    if(now<prefs.getLong("opening_bypass_until_"+pkg,0L))return
     val rule=getRule(name)?:return
     if(!rule.optBoolean("enabled",false))return
     if(now-lastEntryMs<800L)return
@@ -128,6 +133,22 @@ class JoyVimoFocusService : AccessibilityService() {
     prefs.edit().putString("day_"+pkg,day).putInt("opens_"+pkg,after).apply()
     if(after>rule.optInt("opens",3).coerceIn(1,30)){
       redirect(name,pkg,"opening_limit")
+      return
+    }
+    val delay=rule.optInt("delay",0).coerceIn(0,30)
+    if(delay>0 && now-lastPauseLaunchMs>2500L){
+      lastPauseLaunchMs=now
+      prefs.edit().putLong("opening_bypass_until_"+pkg,now+3000L).apply()
+      try {
+        val screen=Intent(this,JoyVimoOpeningPauseActivity::class.java).apply {
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+          putExtra("target_package",pkg)
+          putExtra("delay_seconds",delay)
+        }
+        startActivity(screen)
+      }catch(_:Exception){
+        // Fail open: never trap user if launch restrictions apply.
+      }
       return
     }
     checkCurrentSession()
@@ -233,7 +254,7 @@ class JoyVimoFocusService : AccessibilityService() {
   private fun checkCurrentSession() {
     val pkg=foregroundPkg?:return
     val name=tracked[pkg]?:return
-    if(!isActive())return
+    if(!isActive() || System.currentTimeMillis()<prefs.getLong("safety_pause_until",0L))return
     val power=getSystemService(Context.POWER_SERVICE) as PowerManager
     if(!power.isInteractive)return
     val rule=getRule(name)?:return
