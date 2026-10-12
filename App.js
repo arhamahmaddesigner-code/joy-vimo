@@ -1,139 +1,81 @@
-import React,{useState,useEffect,useRef} from 'react';
-import {View,Text,ScrollView,SafeAreaView,StatusBar,Pressable,Switch,StyleSheet,Alert,Platform,AppState} from 'react-native';
+import React,{useEffect,useState,useRef} from 'react';
+import {Alert,AppState,Image,Pressable,ScrollView,StatusBar,StyleSheet,Switch,Text,View,Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {SafeAreaView,SafeAreaProvider} from 'react-native-safe-area-context';
+import {LinearGradient} from 'expo-linear-gradient';
 import {requireOptionalNativeModule} from 'expo-modules-core';
-
-const violet='#6C3BFF',navy='#17113F',lavender='#F5F2FF',light='#FFFFFF',muted='#767192',mint='#24CCB2',pink='#FF6397';
-const APPS=['Instagram','TikTok','YouTube','Chrome'];
-const INTERESTS=['Nature','Comedy','Animals','Creativity','Learning','Calm'];
-const INIT={
-  started:false,interests:['Nature','Comedy','Animals'],focus:{},
-  rules:Object.fromEntries(APPS.map(n=>[n,{enabled:false,minutes:30,opens:3,session:10}])),
-  xp:0,claims:{},leaderboard:false,
-};
-const key='@joyvimo/qa-v06';
-function Button({children,onPress,secondary=false,small=false,disabled=false}){
- return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.btn,secondary&&styles.btnSecondary,small&&{paddingVertical:11},disabled&&{opacity:.45}]}><Text style={[styles.btnText,secondary&&{color:violet}]}>{children}</Text></Pressable>;
-}
-function Panel({children,style}){return <View style={[styles.panel,style]}>{children}</View>;}
-function Title({children}){return <Text style={styles.title}>{children}</Text>;}
-function Sub({children}){return <Text style={styles.sub}>{children}</Text>;}
-function Row({children}){return <View style={styles.row}>{children}</View>;}
-function Chip({children,active,onPress}){return <Pressable accessibilityRole="button" accessibilityState={{selected:!!active}} onPress={onPress} style={[styles.chip,active&&{backgroundColor:violet}]}><Text style={[styles.chipTxt,active&&{color:light}]}>{children}</Text></Pressable>;}
-export default function App(){
- const [ready,setReady]=useState(false),[s,setS]=useState(INIT),[tab,setTab]=useState('Home');
- const [selected,setSelected]=useState('Instagram'),[observed,setObserved]=useState(null),[perm,setPerm]=useState('not-granted');
- const [sim,setSim]=useState({}),[reset,setReset]=useState(30),[running,setRunning]=useState(false);
- const [feedHidden,setFeedHidden]=useState([]);const clock=useRef(null);
- const native=useRef(null);
- if(native.current===null&&Platform.OS==='android'){try{native.current=requireOptionalNativeModule('JoyVimoUsage')||false;}catch{native.current=false;}}
- useEffect(()=>{let live=true;AsyncStorage.getItem(key).then(v=>{if(v&&live){try{const x=JSON.parse(v);if(x&&typeof x==='object')setS({...INIT,...x,rules:{...INIT.rules,...x.rules}});}catch{}}}).finally(()=>{if(live)setReady(true)});return()=>{live=false}},[]);
- useEffect(()=>{if(ready)AsyncStorage.setItem(key,JSON.stringify(s)).catch(()=>{});},[s,ready]);
- useEffect(()=>{if(!running)return;clock.current=setInterval(()=>setReset(v=>{if(v<=1){setRunning(false);return 0;}return v-1}),1000);return()=>clearInterval(clock.current)},[running]);
- async function refresh(){
-  const n=native.current;if(!n){setPerm('unavailable');setObserved(null);return;}
-  try{if(!n.hasUsageAccess()){setPerm('not-granted');setObserved(null);return;}
-   setPerm('granted');let res=await n.getTodayUsage();setObserved(res);
-  }catch{setPerm('error');setObserved(null);}
- }
- useEffect(()=>{if(ready)refresh()},[ready,tab]);
- useEffect(()=>{const x=AppState.addEventListener('change',v=>{if(v==='active')refresh()});return()=>x.remove()},[]);
- function write(patch){setS(old=>({...old,...patch}));}
- function updateRule(name,change){setS(old=>({...old,rules:{...old.rules,[name]:{...old.rules[name],...change}}}));}
- function claim(id,points){const day=new Date().toLocaleDateString('en-CA');const claimKey=day+'-'+id;
-  if(s.claims[claimKey]){Alert.alert('Already completed','You earned this XP earlier today.');return;}
-  write({xp:s.xp+points,claims:{...s.claims,[claimKey]:true}});
-  Alert.alert('A small win!','+'+points+' XP. Your earned XP stays yours.');
- }
- function simulate(){const today=new Date().toLocaleDateString('en-CA');const old=sim[selected]||{day:today,count:0};const count=old.day===today?old.count:0;const rule=s.rules[selected];
-  if(!rule.enabled){Alert.alert('Rule disabled','Enable the rule to simulate opening attempts.');return;}
-  if(count>=rule.opens){Alert.alert('Demo opening denied','Limit reached. This demo cannot block the real '+selected+' app.');return;}
-  setSim(v=>({...v,[selected]:{day:today,count:count+1}}));Alert.alert('Demo opening allowed',String(rule.opens-count-1)+' simulated opening(s) remain.');
- }
- function usage(name){return observed&&Array.isArray(observed.rows)?observed.rows.find(x=>x.name===name):null;}
- const today=new Date().toLocaleDateString('en-CA');
- const dailyClaims=Object.keys(s.claims).filter(k=>k.startsWith(today)).length;
- const observedMins=observed?.rows?.reduce((n,r)=>n+(Number(r.minutes)||0),0)||0;
- if(!ready)return <SafeAreaView style={styles.onboard}><Text style={styles.onboardBrand}>JOY VIMO</Text></SafeAreaView>;
- if(!s.started)return <SafeAreaView style={styles.onboard}><StatusBar barStyle="light-content" backgroundColor="#26117B"/><ScrollView contentContainerStyle={{flexGrow:1,justifyContent:'center',padding:28}}>
-  <Text style={styles.orb}>✦</Text><Text style={styles.onboardBrand}>JOY VIMO</Text><Text style={styles.onboardHead}>A calmer mind.{'\n'}A brighter you.</Text>
-  <Text style={styles.onboardCopy}>Use your favorite apps more intentionally. Set boundaries, stay aware, and celebrate progress.</Text>
-  <Panel style={{backgroundColor:'#4227A5',borderWidth:0}}><Text style={{color:'#fff',lineHeight:27}}>✧  Private screen-time goals{'\n'}✧  Daily challenges and positive rewards{'\n'}✧  Optional reminders and focus practices</Text></Panel>
-  <Button onPress={()=>write({started:true})}>I'm 18+ · Get started →</Button><Text style={{color:'#DAD0FF',marginTop:14,textAlign:'center'}}>Android testing build only. Does not block other apps yet.</Text>
- </ScrollView></SafeAreaView>;
- return <SafeAreaView style={styles.page}><StatusBar barStyle="dark-content" backgroundColor={lavender}/>
- <View style={styles.header}><Text style={styles.brand}>JOY <Text style={{color:violet}}>VIMO ✦</Text></Text><Pressable accessibilityRole="button" onPress={()=>setTab('Settings')}><Text style={{fontSize:22}}>⚙</Text></Pressable></View>
- <ScrollView key={tab} contentContainerStyle={styles.content}>
- {tab==='Home'&&<>
-  <Text style={styles.greeting}>Good morning! ☀️</Text><Sub>Make today count, at your own pace.</Sub>
-  <Row><Panel style={{flex:1,alignItems:'center'}}><Text style={styles.big}>{Math.min(100,Math.round(100/(1+observedMins/180)))}</Text><Sub>Demo balance score</Sub></Panel><Panel style={{flex:1,alignItems:'center'}}><Text style={styles.big}>{s.xp}</Text><Sub>Permanent XP</Sub></Panel></Row>
-  <Panel style={{backgroundColor:violet}}><Text style={{color:'#DACFFF',fontWeight:'700'}}>✦  FOCUS SHIELD</Text><Text style={styles.whiteTitle}>Make time for what matters</Text><Text style={{color:'#E6DFFF',marginBottom:15}}>Plan app budgets and monitor usage after granting permission.</Text><Button secondary onPress={()=>setTab('Shield')}>Open Focus Shield →</Button></Panel>
-  <Title>Quick actions</Title><Row><Panel style={{flex:1}}><Text style={styles.featureEmoji}>🛡</Text><Text style={styles.featureTitle}>Set limits</Text><Button small secondary onPress={()=>setTab('Shield')}>Open</Button></Panel><Panel style={{flex:1}}><Text style={styles.featureEmoji}>🌿</Text><Text style={styles.featureTitle}>Quick reset</Text><Button small secondary onPress={()=>setTab('Reset')}>Open</Button></Panel></Row>
-  <Panel><Title>Today's small win</Title><Sub>Choose one positive action. Rewards are private and never punished.</Sub><Button onPress={()=>claim('mindful',15)}>Complete mindful break · +15 XP</Button></Panel>
-  <Text style={styles.note}>Usage stats are advisory. JOY VIMO does not enforce social-app limits yet.</Text>
- </>}
- {tab==='Shield'&&<>
-  <Text style={styles.greeting}>Focus Shield 🛡</Text><Sub>Plan limits for the apps you already use.</Sub>
-  <Panel><Title>Android Usage Access</Title>
-   <Sub>{perm==='granted'?'Permission granted. Observed usage below is approximate.':perm==='unavailable'?'Native module unavailable in this build.':'Permission needed to read approximate usage.'}</Sub>
-   {perm!=='granted'?<Button onPress={async()=>{try{await native.current?.openUsageSettings()}catch{Alert.alert('Open settings','Settings → Special app access → Usage access → JOY VIMO')}}}>Open Android Usage Settings</Button>:<Button secondary onPress={refresh}>Refresh device usage</Button>}
-  </Panel>
-  {APPS.map(n=>{const r=s.rules[n],u=usage(n);return <Panel key={n}><Row><View style={{flex:1}}><Text style={styles.featureTitle}>{n}</Text><Sub>{u?'Observed today: '+u.minutes+' min · '+u.opens+' opens':'Usage not available'}</Sub></View><Switch value={r.enabled} onValueChange={v=>updateRule(n,{enabled:v})} trackColor={{true:'#AE91FF'}} thumbColor={violet}/></Row>
-   <Row><View style={{flex:1}}><Text style={styles.note}>Daily budget</Text><Row>{[15,30,60].map(v=><Chip key={v} active={r.minutes===v} onPress={()=>updateRule(n,{minutes:v})}>{v}m</Chip>)}</Row></View></Row>
-   <Text style={styles.note}>Allowed opens (simulation)</Text><Row>{[1,3,5].map(v=><Chip key={v} active={r.opens===v} onPress={()=>updateRule(n,{opens:v})}>{v}</Chip>)}</Row>
-   {u&&r.enabled&&(u.minutes>r.minutes||u.opens>r.opens)?<Text style={styles.warning}>Goal exceeded · reminder only; real app is not blocked.</Text>:null}
-  </Panel>})}
-  <Panel><Title>Opening-limit simulator</Title><Row>{APPS.map(n=><Chip key={n} active={selected===n} onPress={()=>setSelected(n)}>{n==='Instagram'?'IG':n==='YouTube'?'YT':n==='Chrome'?'Web':'TikTok'}</Chip>)}</Row>
-  <Sub>Try three demo opens. The 4th will be denied inside JOY VIMO only.</Sub><Button onPress={simulate}>Simulate {selected} open</Button>
-  <Text style={styles.note}>Real app blocking and adult-site filtering are not implemented yet.</Text></Panel>
- </>}
- {tab==='Feed'&&<>
-  <Text style={styles.greeting}>My Joy Feed ✨</Text><Sub>Finite, user-selected ideas. No autoplay.</Sub>
-  <Row>{INTERESTS.slice(0,3).map(n=><Chip key={n} active={s.interests.includes(n)} onPress={()=>write({interests:s.interests.includes(n)?s.interests.filter(x=>x!==n):[...s.interests,n]})}>{n}</Chip>)}</Row>
-  {INTERESTS.filter(n=>s.interests.includes(n)&&!feedHidden.includes(n)).map((n,i)=><Panel key={n}><View style={[styles.feedArt,{backgroundColor:['#E9E2FF','#DFFAF2','#FFE3EF','#FFF3CE'][i%4]}]}><Text style={{fontSize:55}}>{({Nature:'🏔️',Comedy:'😄',Animals:'🐕',Creativity:'🎨',Learning:'💡',Calm:'🪷'})[n]}</Text></View><Text style={styles.featureTitle}>{n}: A little joy today</Text><Sub>Sample editorial card. No third-party videos loaded.</Sub><Button secondary small onPress={()=>setFeedHidden(v=>[...v,n])}>Not interested</Button></Panel>)}
-  <Button secondary onPress={()=>setFeedHidden([])}>Restore hidden demo cards</Button><Text style={styles.note}>JOY VIMO does not alter Instagram or TikTok recommendation algorithms.</Text>
- </>}
- {tab==='Progress'&&<>
-  <Text style={styles.greeting}>Your Progress 🏆</Text><Sub>Real-life progress over screen time.</Sub>
-  <Row><Panel style={{flex:1}}><Text style={styles.big}>{s.xp}</Text><Sub>Total XP</Sub></Panel><Panel style={{flex:1}}><Text style={styles.big}>{dailyClaims}</Text><Sub>Actions today</Sub></Panel></Row>
-  <Panel><Title>Daily achievements</Title><Sub>Finish positive actions once per day. No XP deductions for missed goals.</Sub><Button onPress={()=>claim('offline',20)}>I took an offline break · +20 XP</Button><Button secondary onPress={()=>claim('plan',10)}>I reviewed my goals · +10 XP</Button></Panel>
-  <Panel><Title>Weekly leaderboard</Title><Sub>Not live yet. Your sensitive habits will never appear in public rankings.</Sub><Row><Text style={styles.featureTitle}>Public competition</Text><Switch value={s.leaderboard} onValueChange={v=>write({leaderboard:v})}/></Row><Text style={styles.note}>{s.leaderboard?'Preference saved locally; no account or live leaderboard is connected.':'Disabled by default. Choose privacy first.'}</Text></Panel>
- </>}
- {tab==='Reset'&&<>
-  <Text style={styles.greeting}>Breathe. Focus. Reset.</Text><Sub>A moment to choose your next action.</Sub>
-  <Panel style={{alignItems:'center',paddingVertical:40}}><Text style={styles.resetCircle}>✦</Text><Text style={styles.big}>{reset}s</Text><Sub>Inhale slowly · Exhale gently</Sub></Panel>
-  <Button onPress={()=>{setRunning(v=>!v);if(reset===0)setReset(30)}}>{running?'Pause breathing':reset===0?'Start again':'Start / Continue'}</Button>
-  <Button secondary onPress={()=>{setRunning(false);setReset(30);claim('reset',15)}}>Finish & log a mindful reset · +15 XP</Button>
-  <Panel><Title>When you feel an urge</Title><Sub>Notice it without judgment. Change your environment, take a short walk, message a friend, or return to what matters to you.</Sub></Panel>
- </>}
- {tab==='Settings'&&<>
-  <Text style={styles.greeting}>Settings & Privacy</Text><Panel><Title>Local-first experience</Title><Sub>Current progress stays on this phone in local AsyncStorage. This test build does not upload intimate habits, browsing history, or content.</Sub></Panel>
-  <Panel><Title>Android protection status</Title><Sub>Usage measurement: {perm==='granted'?'permission enabled':perm}</Sub><Sub>Actual app blocking: not implemented</Sub><Sub>Website filtering: not implemented</Sub><Sub>Global leaderboard: not implemented</Sub></Panel>
-  <Panel><Title>Your data</Title><Button secondary onPress={()=>Alert.alert('Erase local data?','Delete local settings, progress, demo events and preferences?',[
-    {text:'Cancel',style:'cancel'},{text:'Delete',style:'destructive',onPress:async()=>{await AsyncStorage.removeItem(key);setS(INIT);setTab('Home');setSim({});setFeedHidden([]);}}
-   ])}>Erase local data</Button></Panel><Text style={styles.note}>This is an internal Android QA build. Do not interpret its metrics as medical advice.</Text>
- </>}
+import {Home,ShieldCheck,Compass,ChartNoAxesColumnIncreasing,Wind,Settings,ChevronRight,ChevronLeft,Star,Clock3,Check,Sun,Heart,Users,UserRound,Sparkles,Target,Gift,Leaf,EyeOff,Trophy,Lock,Smartphone} from 'lucide-react-native';
+import {createInitial,claimAction,todayKey,canJoinPublicRanking,openingAllowed} from './lib/policy';
+const purple='#6737F5',deep='#21134C',white='#FFFFFF',bg='#F7F5FF',muted='#716C8A',mint='#16B99D';
+const APPS=[['Instagram','IG','#FCE8F4'],['TikTok','TK','#EAE8F5'],['YouTube','YT','#FFE9EA'],['Chrome','WEB','#E3F3FF']];
+const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
+const CHALLENGES=[['Plan my day',10,'plan'],['Take an offline break',20,'offline'],['Pause mindfully',15,'break'],['Reflect on progress',10,'reflect']];
+const FEED=[['Nature','🌄','A quiet moment outdoors'],['Animals','🐕','Something to smile about'],['Creativity','🎨','Make a tiny masterpiece'],['Learning','💡','Learn one little thing'],['Comedy','😊','Enjoy a light moment'],['Calm','🪷','A softer pause']];
+const KEY='@joyvimo/v07';
+function Label({children,size=14,color=deep,bold=false,style}){return <Text style={[{color,fontSize:size,fontWeight:bold?'800':'400',includeFontPadding:false},style]}>{children}</Text>}
+function Row({children,style}){return <View style={[{flexDirection:'row',alignItems:'center',gap:10},style]}>{children}</View>}
+function Card({children,style}){return <View style={[ss.card,style]}>{children}</View>}
+function Button({children,onPress,light=false,disabled=false}){return <Pressable disabled={disabled} accessibilityRole="button" onPress={onPress} style={[ss.button,light&&{backgroundColor:'#EEE8FF'},disabled&&{opacity:.45}]}><Label color={light?purple:white} bold>{children}</Label><ChevronRight size={18} color={light?purple:white}/></Pressable>}
+function Choice({children,active,onPress}){return <Pressable onPress={onPress} style={[ss.choice,active&&{backgroundColor:purple,borderColor:purple}]}><Label bold size={12} color={active?white:deep}>{children}</Label></Pressable>}
+function Header({title,sub}){return <View style={{marginVertical:12}}><Label size={27} bold>{title}</Label><Label color={muted} style={{marginTop:7,lineHeight:21}}>{sub}</Label></View>}
+function AppMain(){
+ const [data,setData]=useState(createInitial()),[ready,setReady]=useState(false),[step,setStep]=useState('welcome'),[selectedAge,setSelectedAge]=useState(null),[guardian,setGuardian]=useState(false);
+ const [topics,setTopics]=useState(['Nature','Animals','Calm']),[tab,setTab]=useState('Home'),[mode,setMode]=useState('Apps'),[ruleApp,setRuleApp]=useState('Instagram'),[observed,setObserved]=useState(null),[permitted,setPermitted]=useState(false);
+ const [demo,setDemo]=useState({}),[hide,setHide]=useState([]),[breath,setBreath]=useState(30),[playing,setPlaying]=useState(false);const native=useRef(null);
+ if(native.current===null&&Platform.OS==='android'){try{native.current=requireOptionalNativeModule('JoyVimoUsage')||false}catch{native.current=false}}
+ const update=patch=>setData(x=>({...x,...patch}));
+ useEffect(()=>{let ok=true;(async()=>{try{const raw=await AsyncStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(ok){setData({...createInitial(),...p,rules:{...createInitial().rules,...p.rules}});if(p.age)setStep('done')}}else{const old=await AsyncStorage.getItem('@joyvimo/qa-v06');if(old&&ok){const p=JSON.parse(old);setData(x=>({...x,xp:p.xp||0,claims:p.claims||{},interests:p.interests||x.interests}))}}}catch{}finally{if(ok)setReady(true)}})();return()=>{ok=false}},[]);
+ useEffect(()=>{if(ready)AsyncStorage.setItem(KEY,JSON.stringify(data)).catch(()=>{})},[data,ready]);
+ async function refresh(){if(data.age==='kid'||!native.current)return;try{if(native.current.hasUsageAccess()){setPermitted(true);setObserved(await native.current.getTodayUsage())}else{setPermitted(false);setObserved(null)}}catch{setPermitted(false)}}
+ useEffect(()=>{if(data.age)refresh()},[data.age,tab]);
+ useEffect(()=>{const l=AppState.addEventListener('change',x=>{if(x==='active')refresh()});return()=>l.remove()},[data.age]);
+ useEffect(()=>{if(!playing)return;const id=setInterval(()=>setBreath(x=>{if(x<=1){setPlaying(false);return 0}return x-1}),1000);return()=>clearInterval(id)},[playing]);
+ function reward(id,xp){const result=claimAction(data,id,xp);if(!result.awarded){Alert.alert('Already earned','This daily reward is already claimed.');return}setData(result.state);Alert.alert('Small win!','+'+xp+' XP earned. Keep going at your own pace.')}
+ function changeRule(n,p){setData(x=>({...x,rules:{...x.rules,[n]:{...x.rules[n],...p}}}))}
+ const completed=CHALLENGES.filter(c=>data.claims[todayKey()+'-'+c[2]]).length;
+ const back=()=>setTab('Home');
+ const rule=data.rules[ruleApp];
+ const count=demo[ruleApp]?.day===todayKey()?demo[ruleApp].count:0;
+ function simOpen(){if(!rule.enabled){Alert.alert('Enable the rule first');return}if(!openingAllowed(rule,count)){Alert.alert('Demo limit reached','This does NOT block '+ruleApp+' outside JOY VIMO.');return}setDemo(p=>({...p,[ruleApp]:{day:todayKey(),count:count+1}}));Alert.alert('Demo opening allowed',String(rule.opens-count-1)+' openings remain in this simulation.')}
+ if(!ready)return <View style={[ss.page,{justifyContent:'center',alignItems:'center'}]}><Label bold size={28} color={purple}>JOY VIMO</Label></View>;
+ if(!data.age)return <SafeAreaView edges={['top','bottom']} style={{flex:1,backgroundColor:'#271167'}}><StatusBar barStyle="light-content"/><ScrollView contentContainerStyle={{flexGrow:1}}><LinearGradient colors={['#321387','#502CBB','#2C156E']} style={{padding:25,paddingTop:40,flexGrow:1,justifyContent:'center'}}>
+ {step==='welcome'?<><Image source={require('./assets/icon.png')} style={{width:125,height:125,alignSelf:'center',borderRadius:30}}/><Label color={white} bold size={36} style={{textAlign:'center',marginTop:12}}>JOY VIMO</Label><Label color='#E3D9FF' size={12} style={{textAlign:'center',letterSpacing:2}}>PLAY HAPPY. LIVE BETTER.</Label><Label color={white} bold size={36} style={{marginTop:48,lineHeight:44}}>More joy.{'\n'}More control.{'\n'}More you.</Label><Label color='#E5DAFF' style={{lineHeight:24,marginTop:16}}>Enjoy your favorite apps more intentionally. Positive challenges, focus goals, and mindful pauses—without shame.</Label><Card style={{backgroundColor:'#5037A4',marginTop:25}}><Label color={white}>✦  Thoughtful screen-time goals</Label><Label color={white} style={{marginTop:12}}>♥  Friendly, private progress</Label><Label color={white} style={{marginTop:12}}>★  Rewards for positive actions</Label></Card><Button light onPress={()=>setStep('age')}>Get started</Button></>:null}
+ {step==='age'?<><Label color='#FFE18C' bold>STEP 1 OF 2</Label><Label color={white} bold size={32} style={{marginTop:16}}>Choose your experience</Label><Label color='#E5DAFF' style={{marginVertical:18,lineHeight:21}}>We tailor privacy and options for different ages.</Label>{[['kid','10–12','Parent-supported, local-only mode'],['teen','13–17','Private teen goals and challenges'],['adult','18+','Adult self-managed mode']].map(([id,name,desc])=><Pressable key={id} onPress={()=>{setSelectedAge(id);setGuardian(false)}} style={[ss.age,{borderColor:selectedAge===id?'#FFD876':'#917BD2'}]}><Label bold color={white} size={17}>{name}  {selectedAge===id?'✓':''}</Label><Label color='#DBD0F8' size={12} style={{marginTop:7}}>{desc}</Label></Pressable>)}{selectedAge==='kid'?<Pressable onPress={()=>setGuardian(v=>!v)} style={{marginVertical:15}}><Label color={white}>[{guardian?'✓':' '}]  I am the parent/caregiver setting up this local demo with the child.</Label></Pressable>:null}<Button light disabled={!selectedAge||(selectedAge==='kid'&&!guardian)} onPress={()=>setStep('interests')}>Continue</Button><Label color='#D8CEEF' size={11} style={{marginTop:15,lineHeight:17}}>Parent acknowledgement is not verified parental consent. Online child accounts are not available.</Label></>:null}
+ {step==='interests'?<><Label color='#FFE18C' bold>STEP 2 OF 2</Label><Label color={white} bold size={32} style={{marginVertical:14}}>What brings you joy?</Label><Label color='#E5DAFF'>Pick interests for your private sample feed.</Label><Row style={{flexWrap:'wrap',marginVertical:20}}>{TOPICS.map(x=><Choice key={x} active={topics.includes(x)} onPress={()=>setTopics(p=>p.includes(x)?p.filter(v=>v!==x):[...p,x])}>{x}</Choice>)}</Row><Button light disabled={!topics.length} onPress={()=>{update({age:selectedAge,interests:topics,leaderboard:false});setStep('done')}}>Start my journey</Button></>:null}
+ </LinearGradient></ScrollView></SafeAreaView>;
+ const NavIcon={Home,Shield:ShieldCheck,Feed:Compass,Progress:ChartNoAxesColumnIncreasing,Reset:Wind};
+ return <SafeAreaView edges={['top','bottom']} style={ss.page}><StatusBar barStyle="dark-content" backgroundColor={bg}/><Row style={ss.header}><Pressable onPress={back}><Image source={require('./assets/wordmark.png')} resizeMode="contain" style={{width:147,height:45}}/></Pressable><Row><Pressable onPress={()=>setTab('Challenges')} style={ss.round}><Star color={purple} size={22}/></Pressable><Pressable onPress={()=>setTab('Settings')} style={ss.round}><UserRound color={purple} size={22}/></Pressable></Row></Row>
+ <ScrollView key={tab} contentContainerStyle={{paddingHorizontal:19,paddingBottom:28}}>
+ {tab==='Home'?<><Header title="A brighter day starts here ☀️" sub="Little steps. More intentional moments."/><Card><Row style={{justifyContent:'space-between'}}><Label bold size={18}>Your week</Label><Sun color='#F5A42D'/></Row><Label color={muted} size={12} style={{marginTop:6}}>Celebrate what matters—not perfection.</Label><Row style={{justifyContent:'space-between',marginTop:20}}>{['M','T','W','T','F','S','S'].map((v,i)=><View key={i} style={{alignItems:'center',gap:8}}><Label color={muted} bold size={12}>{v}</Label><View style={{width:29,height:29,borderRadius:15,backgroundColor:i<completed?'#3CCCB0':'#EFEAFD',alignItems:'center',justifyContent:'center'}}>{i<completed?<Check size={16} color={white}/>:null}</View></View>)}</Row></Card>
+ <LinearGradient colors={['#8153FF','#4921D5']} style={ss.hero}><Row><View style={{flex:1}}><Label color='#ECDFFF' size={12} bold>✦ FOCUS SHIELD</Label><Label color={white} bold size={24} style={{marginTop:8}}>Your phone.{'\n'}Your rules.</Label><Label color='#EAE4FF' size={12} style={{marginTop:10,lineHeight:18}}>Set boundaries that feel right for you.</Label></View><ShieldCheck color={white} size={73}/></Row><Button light onPress={()=>setTab('Shield')}>Set my limits</Button></LinearGradient>
+ <Row><Card style={{flex:1}}><Clock3 color={mint}/><Label color={muted} size={11}>Observed use</Label><Label size={26} bold>{permitted&&observed?observed.rows.reduce((a,b)=>a+Number(b.minutes||0),0)+'m':'—'}</Label></Card><Card style={{flex:1}}><Star color='#ECA42A'/><Label color={muted} size={11}>Your XP</Label><Label size={26} bold>{data.xp}</Label></Card></Row>
+ <Label size={20} bold style={{marginTop:18}}>Quick actions</Label><Row><Pressable onPress={()=>setTab('Shield')} style={{flex:1}}><Card><ShieldCheck color={purple} size={27}/><Label bold style={{marginTop:12}}>Set limits</Label><Label color={muted} size={12}>Focus Shield →</Label></Card></Pressable><Pressable onPress={()=>setTab('Reset')} style={{flex:1}}><Card><Leaf color={mint} size={27}/><Label bold style={{marginTop:12}}>Quick reset</Label><Label color={muted} size={12}>Breathe →</Label></Card></Pressable></Row>
+ <Card><Row style={{justifyContent:'space-between'}}><Label size={18} bold>Daily challenges</Label><Label color={purple} bold>{completed}/4</Label></Row><Label color={muted} size={12} style={{marginVertical:10}}>Small positive actions, private rewards.</Label><Button light onPress={()=>setTab('Challenges')}>See challenges</Button></Card></>:null}
+ {tab==='Shield'?<><Header title="Focus Shield 🛡" sub="Healthy boundaries for apps you already enjoy."/><Row style={{marginVertical:12}}>{['Apps','Websites','Schedules'].map(x=><Choice key={x} active={mode===x} onPress={()=>setMode(x)}>{x}</Choice>)}</Row>
+ {mode==='Apps'?<><Card style={{backgroundColor:'#EEE9FF'}}><Row><Smartphone color={purple} size={27}/><View style={{flex:1}}><Label bold>Android Usage Access</Label><Label color={muted} size={12} style={{marginTop:5}}>{data.age==='kid'?'Disabled in parent-supported child mode':permitted?'Granted · measured approximately':'Permission not granted'}</Label></View></Row>{data.age!=='kid'?<Button light onPress={async()=>{if(permitted){refresh();return}try{await native.current?.openUsageSettings()}catch{Alert.alert('Open Android settings','Settings → Special access → Usage access → JOY VIMO')}}}>{permitted?'Refresh usage':'Open permission settings'}</Button>:null}</Card>
+ {APPS.map(([n,short,color])=>{const r=data.rules[n],u=observed?.rows?.find(x=>x.name===n);return <Card key={n}><Row><View style={{backgroundColor:color,borderRadius:16,width:49,height:49,alignItems:'center',justifyContent:'center'}}><Label color={purple} bold>{short}</Label></View><View style={{flex:1}}><Label bold size={16}>{n}</Label><Label color={muted} size={12} style={{marginTop:4}}>{u?u.minutes+' min · '+u.opens+' opens observed':'No usage reading yet'}</Label></View><Switch value={!!r.enabled} onValueChange={v=>changeRule(n,{enabled:v})}/></Row><View style={ss.divider}/><Row style={{justifyContent:'space-between'}}><Label color={muted} size={12}>{r.minutes} min/day · {r.opens} openings</Label><Pressable onPress={()=>{setRuleApp(n);setTab('Rule')}}><Label color={purple} bold>Edit ›</Label></Pressable></Row></Card>})}<Label color={muted} size={11} style={{marginTop:14,lineHeight:17}}>Usage Access observes selected apps. JOY VIMO does not yet block other apps.</Label></>:null}
+ {mode==='Websites'?<Card><ShieldCheck size={35} color={mint}/><Label bold size={19} style={{marginTop:12}}>Safer browsing</Label><Label color={muted} style={{lineHeight:21,marginTop:9}}>Domain filtering is planned but NOT active. No external websites or social-media reels are blocked in this test APK.</Label><Button light onPress={()=>Alert.alert('Roadmap','Android domain filtering needs a separate opt-in native implementation and safety review.')}>Learn more</Button></Card>:null}
+ {mode==='Schedules'?<Card><Label bold size={19}>Choose your routines</Label>{['Sleep','Study','Me time'].map(n=><Row key={n} style={{justifyContent:'space-between',marginTop:19}}><Label bold>{n} · Planning only</Label><Switch value={!!data.schedules[n]} onValueChange={v=>update({schedules:{...data.schedules,[n]:v}})}/></Row>)}<Label color={muted} size={12} style={{marginTop:16,lineHeight:20}}>These settings save locally; automatic timed blocking is not implemented.</Label></Card>:null}</>:null}
+ {tab==='Rule'?<><Pressable onPress={()=>setTab('Shield')}><Label color={purple}>‹ Back to Focus Shield</Label></Pressable><Header title={ruleApp+' limits'} sub="Create a personal plan and test a simulated opening limit."/><Card><Row style={{justifyContent:'space-between'}}><Label bold>Enable this plan</Label><Switch value={!!rule.enabled} onValueChange={v=>changeRule(ruleApp,{enabled:v})}/></Row></Card>{[['Daily time budget','minutes',[15,30,45,60]],['Allowed openings','opens',[1,2,3,5]],['Session duration','session',[5,10,15,30]],['Pause before opening','delay',[0,5,10,20]]].map(([title,key,opts])=><Card key={key}><Label bold>{title}</Label><Row style={{flexWrap:'wrap',marginTop:12}}>{opts.map(v=><Choice key={v} active={rule[key]===v} onPress={()=>changeRule(ruleApp,{[key]:v})}>{v}{key==='opens'?'×':key==='delay'?'s':'m'}</Choice>)}</Row></Card>)}<Card><Label bold size={18}>Opening simulator</Label><Label color={muted} style={{marginVertical:10}}>Demo count: {count}/{rule.opens}. Real apps aren't blocked.</Label><Button onPress={simOpen}>Simulate opening</Button></Card><Button light onPress={()=>setTab('Shield')}>Save and return</Button></>:null}
+ {tab==='Feed'?<><Header title="A little joy ✨" sub="A finite selection of feel-good ideas, without autoplay."/><Row style={{flexWrap:'wrap',marginBottom:9}}>{TOPICS.map(x=><Choice key={x} active={data.interests.includes(x)} onPress={()=>update({interests:data.interests.includes(x)?data.interests.filter(y=>y!==x):[...data.interests,x]})}>{x}</Choice>)}</Row>{FEED.filter(x=>data.interests.includes(x[0])&&!hide.includes(x[0])).map(([topic,emoji,title])=><Card key={topic}><View style={{backgroundColor:topic==='Animals'?'#FFF0DF':'#EAE5FF',height:170,borderRadius:18,alignItems:'center',justifyContent:'center'}}><Label size={67}>{emoji}</Label></View><Label bold size={18} style={{marginTop:15}}>{title}</Label><Label color={muted} size={12} style={{marginTop:7}}>Positive sample content · no video autoplay</Label><Pressable onPress={()=>setHide(x=>[...x,topic])} style={{alignSelf:'flex-end',marginTop:14}}><Row><EyeOff color={muted} size={16}/><Label color={muted} size={12}>Not interested</Label></Row></Pressable></Card>)}<Button light onPress={()=>setHide([])}>Restore hidden cards</Button><Label color={muted} size={11} style={{marginTop:13}}>JOY VIMO cannot rewrite TikTok or Instagram content recommendations.</Label></>:null}
+ {tab==='Progress'?<><Header title="Your progress 🏆" sub="Celebrate every small step."/><LinearGradient colors={['#7646FA','#4B22CE']} style={ss.hero}><Label color='#EEE6FF' bold>YOUR MOMENTUM</Label><Label color={white} bold size={46} style={{marginTop:7}}>{data.xp} XP</Label><Label color='#EBE1FF'>Earned rewards are never taken away.</Label></LinearGradient><Row><Card style={{flex:1}}><Target color={purple}/><Label bold size={25}>{completed}/4</Label><Label color={muted} size={12}>Daily wins</Label></Card><Card style={{flex:1}}><Trophy color='#DFA22D'/><Label bold size={25}>{Object.keys(data.claims).length}</Label><Label color={muted} size={12}>Total actions</Label></Card></Row><Button onPress={()=>setTab('Challenges')}>Explore challenges</Button><Button light onPress={()=>setTab('Rewards')}>Reward corner</Button><Button light onPress={()=>setTab('Ranking')}>Community privacy and rankings</Button></>:null}
+ {tab==='Challenges'?<><Header title="Daily challenges 🌱" sub="Choose a helpful action. Missing a day is okay."/><Card><Label bold>{completed} of 4 actions complete today</Label><Label color={muted} size={12} style={{marginTop:8}}>No public shame, streak reset or XP deduction.</Label></Card>{CHALLENGES.map(([title,xp,id])=><Card key={id}><Row><View style={ss.round}><Heart color={purple}/></View><View style={{flex:1}}><Label bold size={16}>{title}</Label><Label size={12} color={muted}>Positive step · +{xp} XP</Label></View></Row><Button light disabled={!!data.claims[todayKey()+'-'+id]} onPress={()=>reward(id,xp)}>{data.claims[todayKey()+'-'+id]?'✓ Completed today':'Mark complete · +'+xp+' XP'}</Button></Card>)}</>:null}
+ {tab==='Rewards'?<><Header title="Reward corner 🎁" sub="Feel good about effort, not perfection."/><Card><Star color='#F4B13F' size={38}/><Label size={34} bold style={{marginTop:12}}>{data.xp} XP</Label><Label color={muted}>Your permanent, positive reward total.</Label></Card>{[[15,'Mindful start'],[60,'Growing explorer'],[120,'Bright momentum']].map(([xp,title])=><Card key={xp}><Row><Gift color={purple}/><View style={{flex:1}}><Label bold>{title}</Label><Label color={muted} size={12}>{data.xp>=xp?'Unlocked':xp+' XP to unlock'}</Label></View><Label color={mint}>{data.xp>=xp?'✓':'🔒'}</Label></Row></Card>)}</>:null}
+ {tab==='Ranking'?<><Header title="Community & privacy" sub="No public disclosure of personal or sensitive habits."/><Card><Row><Users color={purple}/><Label bold size={17}>Future weekly challenges</Label></Row><Label color={muted} style={{marginTop:12,lineHeight:21}}>Country/global rankings are not live. When built, only positive focus challenge metrics may be shared with consent.</Label><Row style={{justifyContent:'space-between',marginTop:23}}><View style={{flex:1}}><Label bold>Opt in to rankings</Label><Label color={muted} size={12}>{canJoinPublicRanking(data.age)?'Preference only; backend not connected.':'Unavailable for minors.'}</Label></View><Switch disabled={!canJoinPublicRanking(data.age)} value={!!data.leaderboard&&canJoinPublicRanking(data.age)} onValueChange={v=>update({leaderboard:v})}/></Row></Card></>:null}
+ {tab==='Reset'?<><Header title="Breathe. Focus. Relax." sub="Give yourself a gentle moment."/><Card style={{alignItems:'center',paddingVertical:33}}><LinearGradient colors={['#F5D4FC','#B585FD','#6939EE']} style={{width:223,height:223,borderRadius:115,alignItems:'center',justifyContent:'center'}}><View style={{width:153,height:153,borderRadius:80,backgroundColor:'#D7C4FF',alignItems:'center',justifyContent:'center'}}><View style={{backgroundColor:white,height:115,width:115,borderRadius:70,alignItems:'center',justifyContent:'center'}}><Wind color={purple} size={28}/><Label bold size={13}>Breathe</Label></View></View></LinearGradient><Label size={30} bold style={{marginTop:20}}>{breath}s</Label><Label color={muted}>Slow inhale · Longer exhale</Label></Card><Button onPress={()=>{if(breath===0)setBreath(30);setPlaying(v=>!v)}}>{playing?'Pause breathing':breath===0?'Start again':'Start breathing'}</Button><Button light disabled={breath!==0} onPress={()=>{reward('reset',15);setBreath(30)}}>Finish and earn +15 XP</Button><Card><Label bold size={17}>Feeling an unwanted urge?</Label><Label color={muted} style={{lineHeight:22,marginTop:12}}>Notice it without shame. Move to a different space, try a short walk or contact someone you trust.</Label></Card></>:null}
+ {tab==='Settings'?<><Header title="My space ⚙️" sub="Personal goals and local privacy."/><Card><Row><UserRound color={purple}/><Label bold size={17}>JOY VIMO guest</Label></Row><Label color={muted} style={{marginTop:9}}>{data.age==='kid'?'10–12 · Parent-supported':data.age==='teen'?'13–17 · Teen':'18+ · Adult'}</Label><Label color={muted} size={12} style={{lineHeight:20,marginTop:12}}>This test build saves settings locally. Under-13 mode has no usage tracking or public rankings. Guardian checkbox isn't verified consent.</Label></Card><Button light onPress={()=>setTab('Ranking')}>Privacy and community settings</Button><Button light onPress={()=>Alert.alert('Delete local data?','This removes saved JOY VIMO settings, goals and rewards.',[{text:'Cancel',style:'cancel'},{text:'Delete',style:'destructive',onPress:async()=>{await AsyncStorage.multiRemove([KEY,'@joyvimo/qa-v06']);setData(createInitial());setStep('welcome');setSelectedAge(null);setTab('Home')}}])}>Erase all local data</Button><Label color={muted} size={12} style={{marginTop:15,lineHeight:20}}>Android v0.7 QA only. External app blocking and adult site filtering are not implemented.</Label></>:null}
  </ScrollView>
- <View style={styles.tabs}>{[['Home','⌂'],['Shield','🛡'],['Feed','✦'],['Progress','▥'],['Reset','◉']].map(([name,icon])=><Pressable key={name} accessibilityRole="tab" accessibilityState={{selected:tab===name}} onPress={()=>setTab(name)} style={styles.tab}><Text style={{fontSize:22,color:tab===name?violet:'#AAA6C6'}}>{icon}</Text><Text style={[styles.tabText,tab===name&&{color:violet}]}>{name}</Text></Pressable>)}</View>
- </SafeAreaView>;
+ <Row style={ss.bottom}>{[['Home',Home],['Shield',ShieldCheck],['Feed',Compass],['Progress',ChartNoAxesColumnIncreasing],['Reset',Wind]].map(([n,Icon])=><Pressable key={n} onPress={()=>setTab(n)} style={{flex:1,alignItems:'center',paddingVertical:8}}><View style={{backgroundColor:tab===n?'#E8DFFF':'transparent',borderRadius:12,padding:6}}><Icon size={22} color={tab===n?purple:'#ACA7C3'}/></View><Label size={10} bold color={tab===n?purple:muted}>{n}</Label></Pressable>)}</Row>
+ </SafeAreaView>
 }
-const styles=StyleSheet.create({
- page:{flex:1,backgroundColor:lavender},header:{padding:17,paddingHorizontal:22,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},brand:{fontSize:23,fontWeight:'900',color:navy},content:{padding:18,paddingBottom:36,gap:13},
- greeting:{fontSize:27,fontWeight:'900',color:navy},sub:{color:muted,fontSize:13,lineHeight:21,marginTop:4},title:{fontSize:18,fontWeight:'800',color:navy,marginBottom:7},
- panel:{backgroundColor:light,padding:17,borderRadius:20,gap:8,borderWidth:1,borderColor:'#EAE5FF',marginTop:4},
- row:{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},
- big:{fontSize:33,color:violet,fontWeight:'900'},whiteTitle:{color:light,fontSize:21,fontWeight:'900'},
- btn:{marginTop:12,borderRadius:16,backgroundColor:violet,paddingVertical:15,paddingHorizontal:16,alignItems:'center'},
- btnSecondary:{backgroundColor:'#EFE9FF',borderColor:'#E4D7FF',borderWidth:1},
- btnText:{fontSize:14,fontWeight:'800',color:light},chip:{paddingHorizontal:12,paddingVertical:10,borderRadius:30,backgroundColor:'#EEE9FA',marginRight:2,marginVertical:3},
- chipTxt:{color:navy,fontWeight:'700',fontSize:12},featureTitle:{color:navy,fontSize:17,fontWeight:'800'},
- featureEmoji:{fontSize:28},note:{color:muted,fontSize:12,lineHeight:19,marginTop:5},
- warning:{color:'#B24A57',fontSize:12,fontWeight:'700'},feedArt:{height:155,borderRadius:17,justifyContent:'center',alignItems:'center'},
- tabs:{flexDirection:'row',justifyContent:'space-around',backgroundColor:'#fff',paddingVertical:12,borderTopColor:'#E6E2F7',borderTopWidth:1},
- tab:{flex:1,alignItems:'center'},tabText:{fontSize:10,fontWeight:'700',color:muted,marginTop:3},
- onboard:{flex:1,backgroundColor:'#251174'},onboardBrand:{fontWeight:'900',color:'#fff',fontSize:38,textAlign:'center'},
- orb:{fontSize:92,color:'#F6D25C',textAlign:'center',marginBottom:10},
- onboardHead:{fontSize:37,fontWeight:'900',color:light,textAlign:'center',marginVertical:20},
- onboardCopy:{color:'#E0D8FF',textAlign:'center',fontSize:16,lineHeight:25,marginBottom:20},
- resetCircle:{height:180,width:180,borderRadius:100,borderWidth:20,borderColor:'#BD7AFF',alignItems:'center',justifyContent:'center',textAlign:'center',textAlignVertical:'center',fontSize:58,color:violet}
+export default function App(){return <SafeAreaProvider><AppMain/></SafeAreaProvider>}
+const ss=StyleSheet.create({
+page:{flex:1,backgroundColor:bg},header:{paddingHorizontal:19,paddingTop:6,paddingBottom:12,justifyContent:'space-between'},
+card:{padding:17,backgroundColor:white,borderRadius:21,marginTop:12,shadowColor:'#463C85',shadowOpacity:.045,shadowRadius:9,elevation:1},
+button:{backgroundColor:purple,minHeight:48,borderRadius:16,paddingHorizontal:16,marginTop:13,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6},
+choice:{borderWidth:1,borderColor:'#E7E1F7',backgroundColor:white,borderRadius:20,paddingHorizontal:13,paddingVertical:12},
+hero:{padding:20,borderRadius:22,marginTop:15},divider:{height:1,backgroundColor:'#EDEAF4',marginTop:14,marginBottom:12},
+round:{height:44,width:44,borderRadius:16,backgroundColor:'#EEE8FF',alignItems:'center',justifyContent:'center'},
+bottom:{backgroundColor:white,justifyContent:'space-around',borderTopWidth:1,borderColor:'#EEEAF5',paddingVertical:4},
+age:{borderWidth:2,borderRadius:18,padding:18,backgroundColor:'#49309B',marginTop:12}
 });
