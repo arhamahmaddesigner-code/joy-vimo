@@ -40,6 +40,8 @@ jobs:
         run: npx expo install --fix
         env:
           CI: '1'
+      - name: Verify app policy unit assertions
+        run: node tests/policy.test.cjs
       - name: Generate approved branding assets
         run: npm run assets
       - name: Generate Android project
