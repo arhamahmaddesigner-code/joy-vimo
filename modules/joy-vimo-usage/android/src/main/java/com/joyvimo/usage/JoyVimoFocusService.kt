@@ -90,10 +90,10 @@ class JoyVimoFocusService : AccessibilityService() {
       enteredAtMs=now
       if(pkg!=packageName)recordOpening(pkg,now)
     }
-    if(pkg=="com.android.chrome" && isActive() && prefs.getBoolean("domain_rules_enabled",false)) {
+    if(pkg=="com.android.chrome" && protectionRunning() && prefs.getBoolean("domain_rules_enabled",false)) {
       if(now-lastScanMs>=900L) {lastScanMs=now;checkChromeDomain()}
     }
-    if(pkg==instaPackage && isActive() && prefs.getBoolean("instagram_reels",false)) {
+    if(pkg==instaPackage && protectionRunning() && prefs.getBoolean("instagram_reels",false)) {
       if(now-lastInstagramScanMs>=900L) {
         lastInstagramScanMs=now
         if(hasFullscreenPlayerId(pkg,instagramViewerIds)) {
@@ -101,7 +101,7 @@ class JoyVimoFocusService : AccessibilityService() {
         }
       }
     }
-    if(pkg in tiktokPackages && isActive() && prefs.getBoolean("tiktok_feed",false)) {
+    if(pkg in tiktokPackages && protectionRunning() && prefs.getBoolean("tiktok_feed",false)) {
       if(now-lastTiktokScanMs>=950L) {
         lastTiktokScanMs=now
         if(hasFullscreenPlayerId(pkg,tiktokFeedIds)) {
@@ -109,7 +109,7 @@ class JoyVimoFocusService : AccessibilityService() {
         }
       }
     }
-    if(pkg==ytPackage && isActive() && prefs.getBoolean("youtube_shorts",false)) {
+    if(pkg==ytPackage && protectionRunning() && prefs.getBoolean("youtube_shorts",false)) {
       if(now-lastScanMs>=850L) {
         lastScanMs=now
         if(isShortsPlayerVisible()) redirect("YouTube Shorts",pkg,"shorts_screen",back=true)
@@ -156,6 +156,8 @@ class JoyVimoFocusService : AccessibilityService() {
   private fun isActive():Boolean =
     prefs.getBoolean("consented",false)&&prefs.getBoolean("enforcing",false)&&
       prefs.getString("age","kid")!="kid"
+
+  private fun protectionRunning():Boolean = isActive() && System.currentTimeMillis()>=prefs.getLong("safety_pause_until",0L)
 
   private fun getRule(name:String):JSONObject? {
     val rules=try{JSONObject(prefs.getString("rules","{}")?:"{}")}catch(_:Exception){JSONObject()}
@@ -273,7 +275,7 @@ class JoyVimoFocusService : AccessibilityService() {
     }
   }
   private fun redirect(name:String,pkg:String,reason:String,back:Boolean=false) {
-    if(!isActive())return
+    if(!protectionRunning())return
     val now=System.currentTimeMillis()
     if(now-lastRedirectMs<3000L)return
     lastRedirectMs=now
