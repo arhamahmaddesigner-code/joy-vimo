@@ -1,17 +1,9 @@
 name: Android QA APK
 
+# Deliberately manual-only. Partial source changes must NOT generate
+# a new owner-facing APK or trigger unnecessary install requests.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "App.js"
-      - "app.json"
-      - "package.json"
-      - "assets/**"
-      - "modules/**"
-      - "scripts/**"
-      - ".github/workflows/android-qa-apk.yml"
 
 permissions:
   contents: read
@@ -42,6 +34,8 @@ jobs:
           CI: '1'
       - name: Verify app policy unit assertions
         run: node tests/policy.test.cjs
+      - name: Run privacy & release preflight
+        run: python3 scripts/privacy_preflight.py
       - name: Generate approved branding assets
         run: npm run assets
       - name: Generate Android project
