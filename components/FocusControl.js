@@ -1,0 +1,121 @@
+import React,{useCallback,useEffect,useState} from 'react';
+import {Alert,AppState,Pressable,StyleSheet,Switch,Text,View} from 'react-native';
+
+const accent='#6737F5',ink='#21134C',muted='#716C8A';
+const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. It does not read message text, passwords, screen content, video content or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
+
+export default function FocusControl({nativeModule,age,rules}) {
+  const [consent,setConsent]=useState(false);
+  const [enabled,setEnabled]=useState(false);
+  const [status,setStatus]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const allowed=age==='adult'||age==='teen';
+  const refresh=useCallback(()=>{
+    try {
+      const response=nativeModule?.getFocusStatus?.();
+      if(response){
+        setStatus(response);
+        setConsent(!!response.optedIn);
+        setEnabled(!!response.enforcing);
+      }
+    }catch(error){setStatus(null);}
+  },[nativeModule]);
+  useEffect(()=>{refresh()},[refresh,age]);
+  useEffect(()=>{
+    const subscription=AppState.addEventListener('change',value=>{if(value==='active')refresh()});
+    return()=>subscription.remove();
+  },[refresh]);
+  async function save(nextConsent,nextEnabled){
+    if(!allowed||!nativeModule?.setFocusConfig)return;
+    setBusy(true);
+    try{
+      await nativeModule.setFocusConfig(JSON.stringify({
+        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules
+      }));
+      refresh();
+    }catch(error){Alert.alert('Cannot update Focus Shield','Please try again.');}
+    finally{setBusy(false);}
+  }
+  useEffect(()=>{
+    if(!allowed||!consent||!nativeModule?.setFocusConfig)return;
+    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules})).catch(()=>{});
+  },[age,rules,allowed,consent,enabled,nativeModule]);
+  async function askConsent(){
+    if(consent){await save(false,false);return;}
+    Alert.alert('Optional Android Accessibility permission',disclosure,[
+      {text:'Not now',style:'cancel'},
+      {text:'I understand and opt in',onPress:()=>save(true,false)}
+    ]);
+  }
+  function toggleEnforcement(next){
+    if(!next){save(consent,false);return;}
+    if(!status?.serviceEnabled){
+      Alert.alert('Enable Android permission first','Open Android Accessibility settings and enable JOY VIMO Focus Shield. Return here to activate it.',[
+        {text:'Cancel',style:'cancel'},
+        {text:'Open settings',onPress:openSettings}
+      ]);
+      return;
+    }
+    Alert.alert('Start experimental protection?','Only selected apps with enabled goals are affected. A limit may return you to Home. You can always switch this off here.',[
+      {text:'Cancel',style:'cancel'},
+      {text:'Start protection',onPress:()=>save(true,true)}
+    ]);
+  }
+  async function openSettings(){
+    try{await nativeModule?.openAccessibilitySettings?.();}
+    catch(error){Alert.alert('Open device settings','Settings → Accessibility → Installed Apps → JOY VIMO Focus Shield');}
+  }
+  return <View style={styles.card}>
+    <Text style={styles.heading}>Real Focus Shield · experimental</Text>
+    <Text style={styles.description}>{disclosure}</Text>
+    {!allowed?<Text style={styles.warning}>Under-13 parent-supported mode: device enforcement is not enabled in this QA version.</Text>:null}
+    {allowed&&!nativeModule?<Text style={styles.warning}>Native service is unavailable in this installation.</Text>:null}
+    {allowed&&nativeModule?<React.Fragment>
+      <View style={styles.row}>
+        <View style={styles.copy}>
+          <Text style={styles.label}>I understand and opt in</Text>
+          <Text style={styles.hint}>Off by default. Revocable any time.</Text>
+        </View>
+        <Switch disabled={busy} accessibilityLabel="Consent to Focus Shield" value={consent} onValueChange={askConsent}/>
+      </View>
+      <View style={styles.row}>
+        <View style={styles.copy}>
+          <Text style={styles.label}>Enforce my selected rules</Text>
+          <Text style={styles.hint}>Requires consent and Android permission.</Text>
+        </View>
+        <Switch disabled={busy||!consent} accessibilityLabel="Enable Focus Shield enforcement" value={enabled} onValueChange={toggleEnforcement}/>
+      </View>
+      <Text style={[styles.status,{color:status?.serviceEnabled?'#12866F':'#A36724'}]}>
+        Android Accessibility: {status?.serviceEnabled?'Enabled':'Not enabled'}
+      </Text>
+      <Text style={styles.status}>Rule enforcement: {enabled&&status?.serviceEnabled?'On (experimental)':'Off'}</Text>
+      {status?.lastBlockedApp?<Text style={styles.status}>Last redirected app: {status.lastBlockedApp}</Text>:null}
+      <Pressable accessibilityRole="button" onPress={openSettings} style={styles.button}>
+        <Text style={styles.buttonText}>Open Android Accessibility settings</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={refresh} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Refresh permission status</Text>
+      </Pressable>
+      {(consent||enabled)?<Pressable accessibilityRole="button" onPress={()=>save(false,false)} style={styles.stop}>
+        <Text style={styles.stopText}>Stop and revoke in-app consent</Text>
+      </Pressable>:null}
+    </React.Fragment>:null}
+  </View>;
+}
+const styles=StyleSheet.create({
+  card:{backgroundColor:'#EDFBF7',borderRadius:20,padding:17,marginTop:13},
+  heading:{color:ink,fontSize:18,fontWeight:'800'},
+  description:{color:muted,fontSize:13,lineHeight:21,marginTop:10},
+  row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginTop:18,gap:12},
+  copy:{flex:1},
+  label:{color:ink,fontSize:14,fontWeight:'800'},
+  hint:{color:muted,fontSize:12,lineHeight:18,marginTop:5},
+  status:{fontSize:12,fontWeight:'700',marginTop:11,color:muted},
+  button:{backgroundColor:accent,padding:14,borderRadius:14,marginTop:15,alignItems:'center'},
+  buttonText:{color:'white',fontWeight:'800'},
+  secondary:{backgroundColor:'#DFD7F7',padding:14,borderRadius:14,marginTop:9,alignItems:'center'},
+  secondaryText:{color:accent,fontWeight:'800'},
+  stop:{padding:12,marginTop:9,alignItems:'center'},
+  stopText:{color:'#A53658',fontWeight:'800'},
+  warning:{color:'#A05557',marginTop:11,lineHeight:19}
+});
