@@ -4,7 +4,7 @@ import {Alert,AppState,Pressable,StyleSheet,Switch,Text,View} from 'react-native
 const accent='#6737F5',ink='#21134C',muted='#716C8A';
 const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. It does not read message text, passwords, screen content, video content or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
 
-export default function FocusControl({nativeModule,age,rules}) {
+export default function FocusControl({nativeModule,age,rules,schedules}) {
   const [consent,setConsent]=useState(false);
   const [enabled,setEnabled]=useState(false);
   const [status,setStatus]=useState(null);
@@ -30,7 +30,7 @@ export default function FocusControl({nativeModule,age,rules}) {
     setBusy(true);
     try{
       await nativeModule.setFocusConfig(JSON.stringify({
-        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules
+        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules
       }));
       refresh();
     }catch(error){Alert.alert('Cannot update Focus Shield','Please try again.');}
@@ -38,8 +38,8 @@ export default function FocusControl({nativeModule,age,rules}) {
   }
   useEffect(()=>{
     if(!allowed||!consent||!nativeModule?.setFocusConfig)return;
-    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules})).catch(()=>{});
-  },[age,rules,allowed,consent,enabled,nativeModule]);
+    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules})).catch(()=>{});
+  },[age,rules,schedules,allowed,consent,enabled,nativeModule]);
   async function askConsent(){
     if(consent){await save(false,false);return;}
     Alert.alert('Optional Android Accessibility permission',disclosure,[
@@ -89,7 +89,7 @@ export default function FocusControl({nativeModule,age,rules}) {
         Android Accessibility: {status?.serviceEnabled?'Enabled':'Not enabled'}
       </Text>
       <Text style={styles.status}>Rule enforcement: {enabled&&status?.serviceEnabled?'On (experimental)':'Off'}</Text>
-      {status?.lastBlockedApp?<Text style={styles.status}>Last redirected app: {status.lastBlockedApp}</Text>:null}
+      {status?.lastBlockedApp?<Text style={styles.status}>Last redirected app: {status.lastBlockedApp} ({status.lastReason||'configured limit'})</Text>:null}
       <Pressable accessibilityRole="button" onPress={openSettings} style={styles.button}>
         <Text style={styles.buttonText}>Open Android Accessibility settings</Text>
       </Pressable>
