@@ -117,6 +117,15 @@ export default function FocusControl({nativeModule,age,rules,schedules,domainRul
           }}]);
       }} style={styles.secondary}><Text style={styles.secondaryText}>Safety pause · 15 minutes</Text></Pressable>
       {status?.safetyPauseUntil>Date.now()?<Text style={styles.status}>Safety pause active until {new Date(status.safetyPauseUntil).toLocaleTimeString()}</Text>:null}
+      <Pressable accessibilityRole="button" onPress={()=>{
+        Alert.alert('Commit to current focus rules for 30 minutes?',
+         'Strict Mode temporarily prevents changing your saved limits and schedules. It will not block emergency safety pause, turning off protection, or revoking Android permission.',
+         [{text:'Cancel',style:'cancel'},{text:'Start 30-minute commitment',onPress:async()=>{
+           try{await nativeModule?.startStrictMode?.(30);refresh();}
+           catch{Alert.alert('Unavailable','Enable Focus Shield first, then try again.')}
+         }}]);
+      }} style={styles.secondary}><Text style={styles.secondaryText}>Start voluntary Strict Mode · 30 minutes</Text></Pressable>
+      {status?.strictUntil>Date.now()?<Text style={styles.status}>Commitment ends at {new Date(status.strictUntil).toLocaleTimeString()}. Emergency pause remains available.</Text>:null}
       <Pressable accessibilityRole="button" onPress={refresh} style={styles.secondary}>
         <Text style={styles.secondaryText}>Refresh permission status</Text>
       </Pressable>
