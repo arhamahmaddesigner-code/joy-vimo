@@ -2,7 +2,7 @@
   "expo": {
     "name": "JOY VIMO",
     "slug": "joy-vimo",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "orientation": "portrait",
     "scheme": "joyvimo",
     "icon": "./assets/icon.png",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "android": {
       "package": "com.joyvimo.app",
-      "versionCode": 8,
+      "versionCode": 9,
       "permissions": [
         "android.permission.PACKAGE_USAGE_STATS"
       ],
@@ -21,6 +21,6 @@
       }
     },
     "plugins": [],
-    "description": "Android-first private QA app. Usage monitoring requires Android permission. External blocking not yet implemented."
+    "description": "Private Android QA for personal screen-time goals, opt-in Focus Shield, Family DNS guidance, and offline support tools."
   }
 }
