@@ -1,6 +1,7 @@
 package com.joyvimo.usage
 
 import android.accessibilityservice.AccessibilityService
+import android.graphics.Rect
 import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -16,8 +17,8 @@ import java.util.Calendar
 /**
  * JOY VIMO private Android focus service.
  * Consent required. Observes selected foreground package changes and, only
- * when the user separately enables YouTube Shorts blocking, checks a short
- * allowlist of player UI resource IDs in the YouTube app.
+ * when the user separately enables short-feed blocking, checks a short
+ * allowlist of player UI resource IDs for YouTube, Instagram and TikTok.
  * Optional domain rules temporarily inspect the Chrome address bar only after navigation.
  * Full URLs, page content, messages and history are NEVER stored or uploaded.
  * No telemetry or network requests.
@@ -30,6 +31,18 @@ class JoyVimoFocusService : AccessibilityService() {
     "com.android.chrome" to "Chrome"
   )
   private val ytPackage = "com.google.android.youtube"
+  private val instaPackage = "com.instagram.android"
+  private val tiktokPackages = setOf("com.zhiliaoapp.musically","com.ss.android.ugc.trill")
+  // Conservative UI resource ID candidates from published Android blocker research.
+  // We do not copy source code, content, comments, user text or videos.
+  // Exact matches + fullscreen bounds are required. Unknown UI versions fail open.
+  private val instagramViewerIds = listOf(
+    "clips_viewer_view_pager", "clips_viewer_container",
+    "reel_viewer_fragment", "clips_video_container"
+  )
+  private val tiktokFeedIds = listOf(
+    "for_you_feed", "fyp_container"
+  )
   // Inspired by the technique documented in the MIT AppBlock project.
   // Signatures drift across YouTube versions; never claim a guaranteed block.
   private val shortsPlayerIds = listOf(
@@ -43,6 +56,8 @@ class JoyVimoFocusService : AccessibilityService() {
   private var lastEntryMs=0L
   private var lastRedirectMs=0L
   private var lastScanMs=0L
+  private var lastInstagramScanMs=0L
+  private var lastTiktokScanMs=0L
   private val watchdog=object:Runnable {
     override fun run() {
       try { checkCurrentSession() }catch(_:Exception){}
@@ -75,6 +90,22 @@ class JoyVimoFocusService : AccessibilityService() {
     }
     if(pkg=="com.android.chrome" && isActive() && prefs.getBoolean("domain_rules_enabled",false)) {
       if(now-lastScanMs>=900L) {lastScanMs=now;checkChromeDomain()}
+    }
+    if(pkg==instaPackage && isActive() && prefs.getBoolean("instagram_reels",false)) {
+      if(now-lastInstagramScanMs>=900L) {
+        lastInstagramScanMs=now
+        if(hasFullscreenPlayerId(pkg,instagramViewerIds)) {
+          redirect("Instagram Reels",pkg,"instagram_reels_screen",back=true)
+        }
+      }
+    }
+    if(pkg in tiktokPackages && isActive() && prefs.getBoolean("tiktok_feed",false)) {
+      if(now-lastTiktokScanMs>=950L) {
+        lastTiktokScanMs=now
+        if(hasFullscreenPlayerId(pkg,tiktokFeedIds)) {
+          redirect("TikTok For You",pkg,"tiktok_feed_screen",back=true)
+        }
+      }
     }
     if(pkg==ytPackage && isActive() && prefs.getBoolean("youtube_shorts",false)) {
       if(now-lastScanMs>=850L) {
@@ -123,6 +154,29 @@ class JoyVimoFocusService : AccessibilityService() {
       }
     }catch(_:Exception){false}
   }
+  private fun hasFullscreenPlayerId(pkg:String,candidates:List<String>):Boolean {
+    // Privacy: node resource IDs and geometry only. No node.text,
+    // contentDescription, image capture, URL or raw view-tree telemetry.
+    val root=rootInActiveWindow?:return false
+    if(root.packageName?.toString()!=pkg)return false
+    val metrics=resources.displayMetrics
+    val width=metrics.widthPixels.toLong().coerceAtLeast(1)
+    val height=metrics.heightPixels.toLong().coerceAtLeast(1)
+    return try {
+      candidates.any { id ->
+        val nodes=root.findAccessibilityNodeInfosByViewId("$pkg:id/$id")
+        nodes?.any { node ->
+          val rect=Rect()
+          node.getBoundsInScreen(rect)
+          val w=rect.width().toLong().coerceAtLeast(0)
+          val h=rect.height().toLong().coerceAtLeast(0)
+          w*100>=width*45 && h*100>=height*58 &&
+            w*h*100>=width*height*34
+        } == true
+      }
+    }catch(_:Exception){false}
+  }
+
   private fun checkChromeDomain(){
     // Only Chrome address bar. No browsing history, logs, stored URLs or text scans.
     val root=rootInActiveWindow?:return
