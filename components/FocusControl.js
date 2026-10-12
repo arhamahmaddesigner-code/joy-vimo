@@ -103,6 +103,11 @@ export default function FocusControl({nativeModule,age,rules,schedules,domainRul
       <Text style={[styles.status,{color:status?.serviceEnabled?'#12866F':'#A36724'}]}>
         Android Accessibility: {status?.serviceEnabled?'Enabled':'Not enabled'}
       </Text>
+      <Text style={styles.status}>Service heartbeat: {status?.serviceHealthy?'Healthy recently':status?.serviceEnabled?'Not responding recently — check battery settings':'Service disabled'}</Text>
+      <Text style={styles.status}>Battery optimization: {status?.batteryOptimizationIgnored?'Unrestricted':'May restrict background reliability'}</Text>
+      <Pressable accessibilityRole="button" onPress={async()=>{try{await nativeModule?.openBatteryOptimizationSettings?.()}catch{Alert.alert('Battery settings','Open Android Settings and search for Battery Optimization, then review JOY VIMO.')}}} style={styles.secondary}>
+        <Text style={styles.secondaryText}>Review Android battery restrictions</Text>
+      </Pressable>
       <Text style={styles.status}>Rule enforcement: {enabled&&status?.serviceEnabled?'On (experimental)':'Off'}</Text>
       {status?.lastBlockedApp?<Text style={styles.status}>Last redirected app: {status.lastBlockedApp} ({status.lastReason||'configured limit'})</Text>:null}
       <Pressable accessibilityRole="button" onPress={openSettings} style={styles.button}>
