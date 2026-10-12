@@ -18,7 +18,8 @@ import java.util.Calendar
  * Consent required. Observes selected foreground package changes and, only
  * when the user separately enables YouTube Shorts blocking, checks a short
  * allowlist of player UI resource IDs in the YouTube app.
- * It NEVER reads node text, URLs, messages, passwords or video frames.
+ * Optional domain rules temporarily inspect the Chrome address bar only after navigation.
+ * Full URLs, page content, messages and history are NEVER stored or uploaded.
  * No telemetry or network requests.
  */
 class JoyVimoFocusService : AccessibilityService() {
@@ -72,6 +73,9 @@ class JoyVimoFocusService : AccessibilityService() {
       enteredAtMs=now
       if(pkg!=packageName)recordOpening(pkg,now)
     }
+    if(pkg=="com.android.chrome" && isActive() && prefs.getBoolean("domain_rules_enabled",false)) {
+      if(now-lastScanMs>=900L) {lastScanMs=now;checkChromeDomain()}
+    }
     if(pkg==ytPackage && isActive() && prefs.getBoolean("youtube_shorts",false)) {
       if(now-lastScanMs>=850L) {
         lastScanMs=now
@@ -118,6 +122,37 @@ class JoyVimoFocusService : AccessibilityService() {
         root.findAccessibilityNodeInfosByViewId("$ytPackage:id/$id")?.isNotEmpty()==true
       }
     }catch(_:Exception){false}
+  }
+  private fun checkChromeDomain(){
+    // Only Chrome address bar. No browsing history, logs, stored URLs or text scans.
+    val root=rootInActiveWindow?:return
+    if(root.packageName?.toString()!="com.android.chrome")return
+    val current=try {
+      root.findAccessibilityNodeInfosByViewId("com.android.chrome:id/url_bar")
+        ?.firstOrNull { !it.isFocused }?.text?.toString()
+    }catch(_:Exception){null} ?:return
+    val host=domainFromAddress(current)?:return
+    val list=try{JSONObject(prefs.getString("domain_rules","{}")?:"{}")}
+      catch(_:Exception){JSONObject()}
+    val names=list.optJSONArray("domains")?:return
+    for(i in 0 until names.length()){
+      val rule=names.optString(i,"")
+      if(rule.isNotEmpty() && (host==rule || host.endsWith("."+rule))){
+        redirect("Restricted website","com.android.chrome","domain_rule",back=true)
+        return
+      }
+    }
+  }
+  private fun domainFromAddress(address:String):String? {
+    // Parse only the hostname and discard the raw string immediately.
+    if(address.length>2048 || address.any{it.isWhitespace()})return null
+    return try{
+      val url=if(address.contains("://"))address else "https://"+address
+      val host=android.net.Uri.parse(url).host?.lowercase(java.util.Locale.ROOT)
+        ?.trimEnd('.')?.removePrefix("www.")?:return null
+      if(host.length>253 || !host.contains('.') || host.contains(".."))null
+      else host
+    }catch(_:Exception){null}
   }
   private fun inPresetSchedule():Boolean {
     val schedules=try{JSONObject(prefs.getString("schedules","{}")?:"{}")}catch(_:Exception){JSONObject()}
