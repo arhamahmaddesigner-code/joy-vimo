@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "JOY VIMO",
+    "slug": "joy-vimo",
+    "version": "0.6.0",
+    "orientation": "portrait",
+    "scheme": "joyvimo",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.joyvimo.app",
+      "versionCode": 7,
+      "permissions": [
+        "android.permission.PACKAGE_USAGE_STATS"
+      ],
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [],
+    "description": "Private QA APK. Android usage permission supports measurement only, not external app blocking."
+  }
+}
