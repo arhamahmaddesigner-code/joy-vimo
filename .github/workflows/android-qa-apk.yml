@@ -36,6 +36,7 @@ jobs:
         run: |
           node tests/policy.test.cjs
           node tests/domainRules.test.cjs
+          node tests/scheduleRules.test.cjs
       - name: Run privacy & release preflight
         run: python3 scripts/privacy_preflight.py
       - name: Generate approved branding assets
