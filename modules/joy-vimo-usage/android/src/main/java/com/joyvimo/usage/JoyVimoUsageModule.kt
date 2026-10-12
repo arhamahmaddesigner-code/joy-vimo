@@ -82,6 +82,8 @@ class JoyVimoUsageModule : Module() {
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
       "youtubeShorts" to p.getBoolean("youtube_shorts",false),
+      "instagramReels" to p.getBoolean("instagram_reels",false),
+      "tiktokFeed" to p.getBoolean("tiktok_feed",false),
       "domainRulesEnabled" to p.getBoolean("domain_rules_enabled",false),
       "lastBlockedApp" to (p.getString("last_blocked","")?:""),
       "lastReason" to (p.getString("last_reason","")?:""),
@@ -124,6 +126,8 @@ class JoyVimoUsageModule : Module() {
       val active=consent&&json.optBoolean("enforcing",false)
       val given=json.optJSONObject("rules")?:JSONObject()
       val shorts=json.optBoolean("youtubeShorts",false)
+      val instagramReels=json.optBoolean("instagramReels",false)
+      val tiktokFeed=json.optBoolean("tiktokFeed",false)
       val domainsOn=json.optBoolean("domainRulesEnabled",false)
       val candidates=json.optJSONArray("domains")?:org.json.JSONArray()
       val validated=org.json.JSONArray()
@@ -148,6 +152,8 @@ class JoyVimoUsageModule : Module() {
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
         .edit().putString("age",age).putBoolean("consented",consent)
         .putBoolean("enforcing",active).putBoolean("youtube_shorts",active && shorts)
+        .putBoolean("instagram_reels",active && instagramReels)
+        .putBoolean("tiktok_feed",active && tiktokFeed)
         .putBoolean("domain_rules_enabled",active && domainsOn)
         .putString("domain_rules",JSONObject().put("domains",validated).toString())
         .putString("rules",allowed.toString())
