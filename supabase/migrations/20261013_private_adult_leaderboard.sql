@@ -94,6 +94,7 @@ declare
   u uuid := (select auth.uid());
   score smallint;
   success boolean := false;
+  inserted_count integer := 0;
 begin
   if u is null then raise exception 'Login required'; end if;
   if not exists(select 1 from public.joy_public_profiles
@@ -110,7 +111,8 @@ begin
   insert into public.joy_positive_actions(user_id,action_day,action_key,points)
     values(u,(now() at time zone 'UTC')::date,p_action_key,score)
     on conflict do nothing;
-  get diagnostics success = row_count;
+  get diagnostics inserted_count = row_count;
+  success := inserted_count > 0;
   return query select success,
     coalesce(sum(a.points),0)::integer from public.joy_positive_actions a
     where a.user_id=u and a.action_day >= date_trunc('week',now() at time zone 'UTC')::date;
