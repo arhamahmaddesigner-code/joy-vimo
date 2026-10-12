@@ -45,6 +45,7 @@ function AppMain(){
        age:data.age,consented:true,enforcing:!!x.enforcing,
        rules:data.rules,schedules:data.schedules,
        youtubeShorts:!!x.youtubeShorts,
+       instagramReels:!!x.instagramReels,tiktokFeed:!!x.tiktokFeed,
        domainRulesEnabled:!!data.domainRulesEnabled,
        domains:data.domains||[]
      })).catch(()=>{});
