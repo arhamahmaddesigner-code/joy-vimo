@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const {computeProgress,claimsByDay,localDateKey}=require('../lib/progress');
+const now=new Date(2026,9,13,18);
+const two={'2026-10-13-break':true,'2026-10-13-plan':true,'2026-10-12-offline':true,'2026-10-11-reflect':true};
+const p=computeProgress(two,160,now);
+assert.equal(p.streak,3);assert.equal(p.completedDays,3);assert.equal(p.level,2);
+assert.equal(p.weekly.filter(x=>x.done).length,2);
+assert.equal(p.badges.find(x=>x.threshold===150).unlocked,true);
+assert.equal(p.badges.find(x=>x.threshold===350).unlocked,false);
+assert.equal(computeProgress({'2026-10-12-a':true},0,now).streak,1);
+assert.equal(computeProgress({'2026-10-11-a':true},0,now).streak,0);
+assert.equal(claimsByDay({'junk':true,'2026-10-13-a':false})['2026-10-13'],undefined);
+assert.equal(localDateKey(now),'2026-10-13');
+console.log('PASS: XP, milestones, weekly metrics and non-punitive streak calculations');
