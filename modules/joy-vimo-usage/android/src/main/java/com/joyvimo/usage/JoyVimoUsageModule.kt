@@ -82,6 +82,7 @@ class JoyVimoUsageModule : Module() {
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
       "safetyPauseUntil" to p.getLong("safety_pause_until",0L),
+      "strictUntil" to p.getLong("strict_until",0L),
       "youtubeShorts" to p.getBoolean("youtube_shorts",false),
       "instagramReels" to p.getBoolean("instagram_reels",false),
       "tiktokFeed" to p.getBoolean("tiktok_feed",false),
@@ -110,6 +111,14 @@ class JoyVimoUsageModule : Module() {
     AsyncFunction("openNetworkSettings"){
       context().startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+    AsyncFunction("startStrictMode"){minutes:Int ->
+      val p=context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+      if(!p.getBoolean("consented",false)||!p.getBoolean("enforcing",false))throw IllegalStateException("Enable Focus Shield first")
+      val duration=minutes.coerceIn(15,120)
+      val next=System.currentTimeMillis()+duration*60000L
+      p.edit().putLong("strict_until",maxOf(next,p.getLong("strict_until",0L))).apply()
+      true
     }
     AsyncFunction("pauseFocusSafely"){minutes:Int ->
       val bounded=minutes.coerceIn(1,60)
@@ -176,6 +185,16 @@ class JoyVimoUsageModule : Module() {
           put("session",rule.optInt("session",10).coerceIn(1,120))
           put("delay",rule.optInt("delay",0).coerceIn(0,30))
         })
+      }
+      val current=context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+      if(active && System.currentTimeMillis()<current.getLong("strict_until",0L)){
+        val oldRules=current.getString("rules","{}")?:"{}"
+        val oldSchedule=current.getString("schedules","{}")?:"{}"
+        val oldDomains=current.getString("domain_rules","{}")?:"{}"
+        if(oldRules!=allowed.toString()||oldSchedule!=safeSchedules.toString()
+          ||oldDomains!=JSONObject().put("domains",validated).toString()){
+          throw IllegalStateException("Commitment window active: rules cannot change until it ends. Emergency pause or revoke consent remain available.")
+        }
       }
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
         .edit().putString("age",age).putBoolean("consented",consent)
