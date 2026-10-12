@@ -20,7 +20,9 @@
         "backgroundColor": "#251064"
       }
     },
-    "plugins": [],
+    "plugins": [
+      "./plugins/withPrivateAndroidSettings"
+    ],
     "description": "Private Android QA for personal screen-time goals, opt-in Focus Shield, Family DNS guidance, and offline support tools."
   }
 }
