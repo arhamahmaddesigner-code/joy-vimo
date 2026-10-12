@@ -2,11 +2,12 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Switch,Text,View} from 'react-native';
 
 const accent='#6737F5',ink='#21134C',muted='#716C8A';
-const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. It does not read message text, passwords, screen content, video content or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
+const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. For optional YouTube Shorts detection it checks YouTube screen layout resource IDs only, not screen text, messages, passwords, video frames or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
 
 export default function FocusControl({nativeModule,age,rules,schedules}) {
   const [consent,setConsent]=useState(false);
   const [enabled,setEnabled]=useState(false);
+  const [shorts,setShorts]=useState(false);
   const [status,setStatus]=useState(null);
   const [busy,setBusy]=useState(false);
   const allowed=age==='adult'||age==='teen';
@@ -17,6 +18,7 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
         setStatus(response);
         setConsent(!!response.optedIn);
         setEnabled(!!response.enforcing);
+        setShorts(!!response.youtubeShorts);
       }
     }catch(error){setStatus(null);}
   },[nativeModule]);
@@ -25,12 +27,12 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
     const subscription=AppState.addEventListener('change',value=>{if(value==='active')refresh()});
     return()=>subscription.remove();
   },[refresh]);
-  async function save(nextConsent,nextEnabled){
+  async function save(nextConsent,nextEnabled,nextShorts=shorts){
     if(!allowed||!nativeModule?.setFocusConfig)return;
     setBusy(true);
     try{
       await nativeModule.setFocusConfig(JSON.stringify({
-        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules
+        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules,youtubeShorts:nextConsent&&nextEnabled&&nextShorts
       }));
       refresh();
     }catch(error){Alert.alert('Cannot update Focus Shield','Please try again.');}
@@ -38,8 +40,8 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
   }
   useEffect(()=>{
     if(!allowed||!consent||!nativeModule?.setFocusConfig)return;
-    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules})).catch(()=>{});
-  },[age,rules,schedules,allowed,consent,enabled,nativeModule]);
+    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules,youtubeShorts:shorts})).catch(()=>{});
+  },[age,rules,schedules,allowed,consent,enabled,shorts,nativeModule]);
   async function askConsent(){
     if(consent){await save(false,false);return;}
     Alert.alert('Optional Android Accessibility permission',disclosure,[
@@ -84,6 +86,19 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
           <Text style={styles.hint}>Requires consent and Android permission.</Text>
         </View>
         <Switch disabled={busy||!consent} accessibilityLabel="Enable Focus Shield enforcement" value={enabled} onValueChange={toggleEnforcement}/>
+      </View>
+      <View style={styles.row}>
+        <View style={styles.copy}>
+          <Text style={styles.label}>Interrupt YouTube Shorts (experimental)</Text>
+          <Text style={styles.hint}>Separately optional; examines YouTube player view IDs only. Detection may fail after YouTube updates.</Text>
+        </View>
+        <Switch disabled={busy||!consent||!enabled} accessibilityLabel="Enable YouTube Shorts detection" value={shorts} onValueChange={v=>{
+          if(!v){save(consent,enabled,false);return;}
+          Alert.alert('Additional Accessibility capability','To identify a YouTube Shorts player, JOY VIMO must inspect YouTube accessibility view resource IDs. It does not read screen text, messages, video frames or URLs. Continue?',[
+            {text:'Cancel',style:'cancel'},
+            {text:'Enable',onPress:()=>save(consent,enabled,true)}
+          ]);
+        }}/>
       </View>
       <Text style={[styles.status,{color:status?.serviceEnabled?'#12866F':'#A36724'}]}>
         Android Accessibility: {status?.serviceEnabled?'Enabled':'Not enabled'}
