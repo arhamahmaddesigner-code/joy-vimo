@@ -187,6 +187,7 @@ class JoyVimoUsageModule : Module() {
         })
       }
       val current=context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+      if(!active)current.edit().remove("strict_until").apply()
       if(active && System.currentTimeMillis()<current.getLong("strict_until",0L)){
         val oldRules=current.getString("rules","{}")?:"{}"
         val oldSchedule=current.getString("schedules","{}")?:"{}"
