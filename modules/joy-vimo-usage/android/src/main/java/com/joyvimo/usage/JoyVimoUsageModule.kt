@@ -93,6 +93,23 @@ class JoyVimoUsageModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("JoyVimoUsage")
     Function("hasUsageAccess"){access()}
+    Function("getPrivateDnsSummary"){
+      val c=context()
+      val mode=try{Settings.Global.getString(c.contentResolver,"private_dns_mode")?:"unknown"}
+        catch(_:Exception){"unknown"}
+      val host=try{Settings.Global.getString(c.contentResolver,"private_dns_specifier")?:""}
+        catch(_:Exception){""}
+      mapOf("mode" to mode,"host" to host,"familySelected" to
+        (mode=="hostname" && host.equals("family.cloudflare-dns.com",ignoreCase=true)))
+    }
+    AsyncFunction("openNetworkSettings"){
+      context().startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+    AsyncFunction("clearFocusConfig"){
+      context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+        .edit().clear().commit()
+    }
     Function("getFocusStatus"){focusStatus()}
     AsyncFunction("openAccessibilitySettings"){
       context().startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
