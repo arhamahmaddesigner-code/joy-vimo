@@ -51,6 +51,11 @@ must("tests/progress.test.cjs" in workflow,"Progress regression checks required"
 must("withPrivateAndroidSettings" in app_cfg["expo"].get("plugins",[])[0],"Android backup privacy plugin missing")
 plugin=(root/"plugins/withPrivateAndroidSettings.js").read_text()
 must("android:allowBackup" in plugin and "'false'" in plugin,"Android backup must be disabled")
+leaderboard=(root/"components/AdultLeaderboard.js").read_text()
+must("joy_weekly_leaderboard" in leaderboard and "p_country" in leaderboard,"Country/global leaderboard connection must be present")
+must("joy_leave_leaderboard" in leaderboard and "joy_delete_leaderboard_data" in leaderboard,"Online opt-out and delete controls must remain present")
+must("age==='adult'" in leaderboard,"Public online leaderboard must remain adult-only")
+must("EXPO_PUBLIC_JOY_SUPABASE" in (root/"lib/joySupabase.js").read_text(),"Dedicated backend config required")
 must("expo" in package["dependencies"],"Missing Expo dependency")
 for hazard in ["READ_SMS","READ_CONTACTS","QUERY_ALL_PACKAGES","REQUEST_INSTALL_PACKAGES","READ_CALL_LOG"]:
     must(hazard not in manifest,"Unexpected sensitive permission in manifest: "+hazard)
