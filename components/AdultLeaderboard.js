@@ -4,22 +4,32 @@ import {configured,joySupabase as db} from '../lib/joySupabase';
 const V='#6737F5',D='#21134C',M='#706B87';
 export default function AdultLeaderboard({age}){
  const [session,setSession]=useState(null),[email,setEmail]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),
- [country,setCountry]=useState('PK'),[rows,setRows]=useState([]),[member,setMember]=useState(false);
+ [country,setCountry]=useState('PK'),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
  const adult=age==='adult';
  async function refresh(){
   if(!db)return;
-  const {data:{session:s}}=await db.auth.getSession();setSession(s);
+  const {data:{session:s},error:sessionError}=await db.auth.getSession();if(sessionError)throw sessionError;setSession(s);
   if(s){
-   const [{data:profile},{data:rankings}]=await Promise.all([
-    db.from('joy_public_profiles').select('visible').eq('user_id',s.user.id).maybeSingle(),
-    db.rpc('joy_weekly_leaderboard',{p_country:null})
-   ]);
-   setMember(!!profile?.visible);setRows(rankings||[]);
+   const {data:profile,error:profileError}=await db.from('joy_public_profiles').select('visible').eq('user_id',s.user.id).maybeSingle();
+   if(profileError)throw profileError;
+   setMember(!!profile?.visible);
+   if(profile?.visible)await getRankings();else setRows([]);
   }else{setRows([]);setMember(false)}
  }
- useEffect(()=>{refresh().catch(()=>{});if(!db)return;
-  const {data:auth}=db.auth.onAuthStateChange(()=>{refresh().catch(()=>{})});
-  return()=>auth.subscription.unsubscribe()},[]);
+ async function getRankings(which=scope,region=country){
+  if(!db)return;
+  const code=region.trim().toUpperCase();
+  if(which==='country'&&!/^[A-Z]{2}$/.test(code)){setLoadError('Enter a valid two-letter country code.');return;}
+  const {data,error}=await db.rpc('joy_weekly_leaderboard',{p_country:which==='country'?code:null});
+  if(error){setLoadError('Unable to load rankings: '+error.message);setRows([]);return;}
+  setLoadError('');setRows(data||[]);
+ }
+ useEffect(()=>{refresh().catch(()=>setLoadError('Could not load your account.'));if(!db)return;
+  // Supabase auth callbacks must not synchronously await other Supabase calls.
+  const {data:auth}=db.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(()=>{}),0)});
+  return()=>auth.subscription.unsubscribe();
+ },[]);
+ useEffect(()=>{if(session&&member)getRankings().catch(()=>setLoadError('Unable to load rankings.'))},[scope,country,member,session?.user?.id]);
  async function execute(task){setBusy(true);try{await task();await refresh()}catch(e){Alert.alert('Could not complete',e.message||'Try again later')}finally{setBusy(false)}}
  async function signin(){if(!email.includes('@')){Alert.alert('Email required','Enter a valid email to receive a sign-in link.');return;}
   execute(async()=>{const {error}=await db.auth.signInWithOtp({email:email.trim(),options:{shouldCreateUser:true}});if(error)throw error;Alert.alert('Check your email','Enter the one-time email verification code below. JOY VIMO never asks you to share a password.')})}
@@ -36,7 +46,10 @@ export default function AdultLeaderboard({age}){
  <Pressable accessibilityRole="button" disabled={busy} onPress={()=>Alert.alert('Adult-only public challenge',
  'Your random alias, country and capped positive-action points will be shown on the leaderboard. Only opt in if you are at least 18. This is not a measure of medical recovery.',
  [{text:'Cancel',style:'cancel'},{text:'I am 18+ and opt in',onPress:()=>execute(()=>rpc('joy_join_leaderboard',{p_country:country.toUpperCase()}))}])} style={s.button}><Text style={s.white}>Join voluntarily</Text></Pressable></>:
- <><Text style={s.section}>This week's public positive actions</Text>
+ <><Text style={s.section}>This week's positive actions</Text>
+ <View style={{flexDirection:'row',gap:8,marginTop:13}}>{[['global','Global'],['country','Country']].map(([v,label])=><Pressable key={v} accessibilityRole="button" onPress={()=>setScope(v)} style={[s.secondary,{flex:1,backgroundColor:scope===v?'#6737F5':'#F1EBFC',borderRadius:12,paddingVertical:11}]}><Text style={{color:scope===v?'white':V,fontWeight:'800'}}>{label}</Text></Pressable>)}</View>
+ {scope==='country'?<TextInput style={s.input} placeholder="Country code, e.g. PK" maxLength={2} autoCapitalize="characters" value={country} onChangeText={setCountry}/>:null}
+ {loadError?<Text style={[s.description,{color:'#AC3355'}]}>{loadError}</Text>:null}
  {rows.length?rows.map((r,i)=><View key={r.alias+'-'+i} style={s.row}><Text style={{color:D,fontWeight:'700',flex:1}}>{r.rank}. {r.alias} · {r.country}</Text><Text style={{color:V,fontWeight:'800'}}>{r.points} pts</Text></View>):<Text style={s.description}>No participants yet.</Text>}
  <Pressable accessibilityRole="button" disabled={busy} onPress={()=>execute(()=>rpc('joy_leave_leaderboard'))} style={s.secondary}><Text style={s.link}>Leave public rankings</Text></Pressable></>}
  <Pressable accessibilityRole="button" disabled={busy} onPress={()=>Alert.alert('Delete leaderboard data?','Delete your public profile and positive-action records from JOY VIMO’s dedicated database.',[{text:'Cancel',style:'cancel'},{text:'Delete my data',style:'destructive',onPress:()=>execute(()=>rpc('joy_delete_leaderboard_data'))}])} style={s.secondary}><Text style={s.link}>Delete my leaderboard data</Text></Pressable>
