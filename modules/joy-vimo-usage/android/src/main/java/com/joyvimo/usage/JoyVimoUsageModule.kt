@@ -82,6 +82,7 @@ class JoyVimoUsageModule : Module() {
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
       "youtubeShorts" to p.getBoolean("youtube_shorts",false),
+      "domainRulesEnabled" to p.getBoolean("domain_rules_enabled",false),
       "lastBlockedApp" to (p.getString("last_blocked","")?:""),
       "lastReason" to (p.getString("last_reason","")?:""),
       "lastBlockedAt" to p.getLong("last_blocked_at",0L),
@@ -123,6 +124,14 @@ class JoyVimoUsageModule : Module() {
       val active=consent&&json.optBoolean("enforcing",false)
       val given=json.optJSONObject("rules")?:JSONObject()
       val shorts=json.optBoolean("youtubeShorts",false)
+      val domainsOn=json.optBoolean("domainRulesEnabled",false)
+      val candidates=json.optJSONArray("domains")?:org.json.JSONArray()
+      val validated=org.json.JSONArray()
+      val domainPattern=Regex("^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)+[a-z]{2,63}$")
+      for(i in 0 until minOf(candidates.length(),30)){
+        val name=candidates.optString(i,"").trim().lowercase(java.util.Locale.ROOT)
+        if(name.length<=253 && domainPattern.matches(name))validated.put(name)
+      }
       val scheduleInput=json.optJSONObject("schedules")?:JSONObject()
       val safeSchedules=JSONObject()
       for(name in listOf("Sleep","Study","Me time"))safeSchedules.put(name,scheduleInput.optBoolean(name,false))
@@ -139,6 +148,8 @@ class JoyVimoUsageModule : Module() {
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
         .edit().putString("age",age).putBoolean("consented",consent)
         .putBoolean("enforcing",active).putBoolean("youtube_shorts",active && shorts)
+        .putBoolean("domain_rules_enabled",active && domainsOn)
+        .putString("domain_rules",JSONObject().put("domains",validated).toString())
         .putString("rules",allowed.toString())
         .putString("schedules",safeSchedules.toString()).apply()
       true
