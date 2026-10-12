@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Switch,Text,View} from 'react-native';
 
 const accent='#6737F5',ink='#21134C',muted='#716C8A';
-const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. For optional YouTube Shorts detection it checks YouTube screen layout resource IDs only, not screen text, messages, passwords, video frames or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
+const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. Your selected opening delay may display a mindful pause before continuing; a safety pause is always available. For optional YouTube Shorts detection it checks YouTube screen layout resource IDs only, not screen text, messages, passwords, video frames or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
 
 export default function FocusControl({nativeModule,age,rules,schedules,domainRulesEnabled=false,domains=[]}) {
   const [consent,setConsent]=useState(false);
@@ -108,6 +108,15 @@ export default function FocusControl({nativeModule,age,rules,schedules,domainRul
       <Pressable accessibilityRole="button" onPress={openSettings} style={styles.button}>
         <Text style={styles.buttonText}>Open Android Accessibility settings</Text>
       </Pressable>
+      <Pressable accessibilityRole="button" onPress={()=>{
+        Alert.alert('Pause protection for 15 minutes?',
+          'This is an always-available safety bypass. Your personal rules stay saved and resume automatically.',
+          [{text:'Cancel',style:'cancel'},{text:'Pause 15 minutes',onPress:async()=>{
+            try{await nativeModule?.pauseFocusSafely?.(15);refresh();}
+            catch{Alert.alert('Unable to pause','Disable Focus Shield using the switch or Android Accessibility settings.')}
+          }}]);
+      }} style={styles.secondary}><Text style={styles.secondaryText}>Safety pause · 15 minutes</Text></Pressable>
+      {status?.safetyPauseUntil>Date.now()?<Text style={styles.status}>Safety pause active until {new Date(status.safetyPauseUntil).toLocaleTimeString()}</Text>:null}
       <Pressable accessibilityRole="button" onPress={refresh} style={styles.secondary}>
         <Text style={styles.secondaryText}>Refresh permission status</Text>
       </Pressable>
