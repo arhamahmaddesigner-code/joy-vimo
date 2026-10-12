@@ -44,3 +44,10 @@ The current APK workflow generates a disposable debug signing key on fresh runne
 - Manual full owner review ONCE after internally validated candidate.
 
 No clinical cure can be claimed. User improvement must be evaluated from real-life function and wellbeing, not a single streak count.
+
+
+## 2026-10-12 internal Shorts experiment (new code, not copied)
+- Reviewed the MIT-licensed AppBlock Android source at https://github.com/SadeekFarhan21/AppBlock and the MIT-licensed No, Thanks! source at https://github.com/NewYearNewPhil/nothanks. Their use of Android accessibility resource IDs informed the design; **no third-party source code has been copied into JOY VIMO**.
+- Our own opt-in YouTube Shorts detector checks only a fixed list of YouTube player view IDs. It does not read accessibility node text, images, browsing history or frame contents. It requires view-ID accessibility capability and a separate consent toggle.
+- This is **experimental code and has not passed GitHub APK compilation or Realme C71 reliability testing**. Do not market it as reliably blocking all YouTube Shorts, Instagram Reels or TikTok videos.
+- Because the service now declares `canRetrieveWindowContent=true`, the capability is broader than the original package-name-only feature. Although the written implementation avoids text access, Android grants the service potential access to additional UI content. Explicitly disclose this increased privilege and consider limiting it further if possible. Security review is mandatory before any distribution.
