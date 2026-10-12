@@ -81,6 +81,7 @@ class JoyVimoUsageModule : Module() {
       "serviceEnabled" to enabled.split(":").any{it.equals(component,ignoreCase=true)},
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
+      "youtubeShorts" to p.getBoolean("youtube_shorts",false),
       "lastBlockedApp" to (p.getString("last_blocked","")?:""),
       "lastReason" to (p.getString("last_reason","")?:""),
       "lastBlockedAt" to p.getLong("last_blocked_at",0L),
@@ -121,6 +122,7 @@ class JoyVimoUsageModule : Module() {
       val consent=json.optBoolean("consented",false)&&age!="kid"
       val active=consent&&json.optBoolean("enforcing",false)
       val given=json.optJSONObject("rules")?:JSONObject()
+      val shorts=json.optBoolean("youtubeShorts",false)
       val scheduleInput=json.optJSONObject("schedules")?:JSONObject()
       val safeSchedules=JSONObject()
       for(name in listOf("Sleep","Study","Me time"))safeSchedules.put(name,scheduleInput.optBoolean(name,false))
@@ -136,7 +138,8 @@ class JoyVimoUsageModule : Module() {
       }
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
         .edit().putString("age",age).putBoolean("consented",consent)
-        .putBoolean("enforcing",active).putString("rules",allowed.toString())
+        .putBoolean("enforcing",active).putBoolean("youtube_shorts",active && shorts)
+        .putString("rules",allowed.toString())
         .putString("schedules",safeSchedules.toString()).apply()
       true
     }
