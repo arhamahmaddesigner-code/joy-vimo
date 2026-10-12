@@ -6,6 +6,7 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.os.Process
+import android.os.PowerManager
 import android.provider.Settings
 import org.json.JSONObject
 import expo.modules.kotlin.modules.Module
@@ -77,7 +78,16 @@ class JoyVimoUsageModule : Module() {
     val enabled=Settings.Secure.getString(context().contentResolver,Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)?:""
     val component=context().packageName+"/com.joyvimo.usage.JoyVimoFocusService"
     val p=context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
+    val power=context().getSystemService(Context.POWER_SERVICE) as PowerManager
+    val now=System.currentTimeMillis()
+    val heartbeat=p.getLong("service_heartbeat_at",0L)
+    val enabledOnSystem=enabled.split(":").any{it.equals(component,ignoreCase=true)}
     return mapOf(
+      "heartbeatAt" to heartbeat,
+      "serviceHealthy" to (enabledOnSystem && heartbeat>0 && now-heartbeat in 0..20000),
+      "batteryOptimizationIgnored" to power.isIgnoringBatteryOptimizations(context().packageName),
+      "serviceConnectedAt" to p.getLong("service_connected_at",0L),
+      "serviceShutdownCleanly" to p.getBoolean("service_shutdown_cleanly",false),
       "serviceEnabled" to enabled.split(":").any{it.equals(component,ignoreCase=true)},
       "optedIn" to p.getBoolean("consented",false),
       "enforcing" to p.getBoolean("enforcing",false),
@@ -136,6 +146,10 @@ class JoyVimoUsageModule : Module() {
         .edit().clear().commit()
     }
     Function("getFocusStatus"){focusStatus()}
+    AsyncFunction("openBatteryOptimizationSettings"){
+      context().startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
     AsyncFunction("openAccessibilitySettings"){
       context().startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
