@@ -36,6 +36,19 @@ function AppMain(){
  useEffect(()=>{if(!playing)return;const id=setInterval(()=>setBreath(x=>{if(x<=1){setPlaying(false);return 0}return x-1}),1000);return()=>clearInterval(id)},[playing]);
  function reward(id,xp){const result=claimAction(data,id,xp);if(!result.awarded){Alert.alert('Already earned','This daily reward is already claimed.');return}setData(result.state);Alert.alert('Small win!','+'+xp+' XP earned. Keep going at your own pace.')}
  function changeRule(n,p){setData(x=>({...x,rules:{...x.rules,[n]:{...x.rules[n],...p}}}))}
+ useEffect(()=>{if(!ready||data.age==='kid'||!native.current)return;
+   try{
+     const x=native.current.getFocusStatus?.();
+     if(!x?.optedIn)return;
+     native.current.setFocusConfig(JSON.stringify({
+       age:data.age,consented:true,enforcing:!!x.enforcing,
+       rules:data.rules,schedules:data.schedules,
+       youtubeShorts:!!x.youtubeShorts,
+       domainRulesEnabled:!!data.domainRulesEnabled,
+       domains:data.domains||[]
+     })).catch(()=>{});
+   }catch{}
+ },[ready,data.age,data.domains,data.domainRulesEnabled]);
  const completed=CHALLENGES.filter(c=>data.claims[todayKey()+'-'+c[2]]).length;
  const back=()=>setTab('Home');
  const rule=data.rules[ruleApp];
