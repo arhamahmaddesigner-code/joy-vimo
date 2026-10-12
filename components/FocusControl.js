@@ -4,7 +4,7 @@ import {Alert,AppState,Pressable,StyleSheet,Switch,Text,View} from 'react-native
 const accent='#6737F5',ink='#21134C',muted='#716C8A';
 const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. For optional YouTube Shorts detection it checks YouTube screen layout resource IDs only, not screen text, messages, passwords, video frames or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
 
-export default function FocusControl({nativeModule,age,rules,schedules}) {
+export default function FocusControl({nativeModule,age,rules,schedules,domainRulesEnabled=false,domains=[]}) {
   const [consent,setConsent]=useState(false);
   const [enabled,setEnabled]=useState(false);
   const [shorts,setShorts]=useState(false);
@@ -32,7 +32,7 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
     setBusy(true);
     try{
       await nativeModule.setFocusConfig(JSON.stringify({
-        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules,youtubeShorts:nextConsent&&nextEnabled&&nextShorts
+        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules,youtubeShorts:nextConsent&&nextEnabled&&nextShorts,domainRulesEnabled,domains
       }));
       refresh();
     }catch(error){Alert.alert('Cannot update Focus Shield','Please try again.');}
@@ -40,8 +40,8 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
   }
   useEffect(()=>{
     if(!allowed||!consent||!nativeModule?.setFocusConfig)return;
-    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules,youtubeShorts:shorts})).catch(()=>{});
-  },[age,rules,schedules,allowed,consent,enabled,shorts,nativeModule]);
+    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules,youtubeShorts:shorts,domainRulesEnabled,domains})).catch(()=>{});
+  },[age,rules,schedules,domainRulesEnabled,domains,allowed,consent,enabled,shorts,nativeModule]);
   async function askConsent(){
     if(consent){await save(false,false);return;}
     Alert.alert('Optional Android Accessibility permission',disclosure,[
@@ -94,7 +94,7 @@ export default function FocusControl({nativeModule,age,rules,schedules}) {
         </View>
         <Switch disabled={busy||!consent||!enabled} accessibilityLabel="Enable YouTube Shorts detection" value={shorts} onValueChange={v=>{
           if(!v){save(consent,enabled,false);return;}
-          Alert.alert('Additional Accessibility capability','To identify a YouTube Shorts player, JOY VIMO must inspect YouTube accessibility view resource IDs. It does not read screen text, messages, video frames or URLs. Continue?',[
+          Alert.alert('Additional Accessibility capability','To identify a YouTube Shorts player, JOY VIMO must inspect YouTube accessibility view resource IDs. If you enable website rules separately, JOY VIMO temporarily reads the Chrome address bar to compare domains, without storing URL history. It does not read messages, video frames or other browsing content. Continue?',[
             {text:'Cancel',style:'cancel'},
             {text:'Enable',onPress:()=>save(consent,enabled,true)}
           ]);
