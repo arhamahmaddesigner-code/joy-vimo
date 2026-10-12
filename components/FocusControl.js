@@ -32,7 +32,7 @@ export default function FocusControl({nativeModule,age,rules,schedules,domainRul
     setBusy(true);
     try{
       await nativeModule.setFocusConfig(JSON.stringify({
-        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules,youtubeShorts:nextConsent&&nextEnabled&&nextShorts,domainRulesEnabled,domains
+        age,consented:nextConsent,enforcing:nextConsent&&nextEnabled,rules,schedules,youtubeShorts:nextConsent&&nextEnabled&&nextShorts,instagramReels:nextConsent&&nextEnabled&&!!status?.instagramReels,tiktokFeed:nextConsent&&nextEnabled&&!!status?.tiktokFeed,domainRulesEnabled,domains
       }));
       refresh();
     }catch(error){Alert.alert('Cannot update Focus Shield','Please try again.');}
@@ -40,7 +40,7 @@ export default function FocusControl({nativeModule,age,rules,schedules,domainRul
   }
   useEffect(()=>{
     if(!allowed||!consent||!nativeModule?.setFocusConfig)return;
-    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules,youtubeShorts:shorts,domainRulesEnabled,domains})).catch(()=>{});
+    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules,youtubeShorts:shorts,instagramReels:!!nativeModule.getFocusStatus()?.instagramReels,tiktokFeed:!!nativeModule.getFocusStatus()?.tiktokFeed,domainRulesEnabled,domains})).catch(()=>{});
   },[age,rules,schedules,domainRulesEnabled,domains,allowed,consent,enabled,shorts,nativeModule]);
   async function askConsent(){
     if(consent){await save(false,false);return;}
