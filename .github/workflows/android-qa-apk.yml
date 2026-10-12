@@ -57,7 +57,7 @@ jobs:
       - name: Upload QA APK
         uses: actions/upload-artifact@v4
         with:
-          name: JOY-VIMO-v0.7-Realme-C71-APK
+          name: JOY-VIMO-Integrated-Private-QA-APK
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
