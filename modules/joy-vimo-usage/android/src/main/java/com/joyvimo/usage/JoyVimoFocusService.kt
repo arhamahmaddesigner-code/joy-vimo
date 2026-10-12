@@ -232,12 +232,36 @@ class JoyVimoFocusService : AccessibilityService() {
     }catch(_:Exception){null}
   }
   private fun inPresetSchedule():Boolean {
-    val schedules=try{JSONObject(prefs.getString("schedules","{}")?:"{}")}catch(_:Exception){JSONObject()}
+    val root=try{JSONObject(prefs.getString("schedules","{}")?:"{}")}catch(_:Exception){JSONObject()}
     val c=Calendar.getInstance()
-    val nowMinute=c.get(Calendar.HOUR_OF_DAY)*60+c.get(Calendar.MINUTE)
-    return (schedules.optBoolean("Sleep",false)&&(nowMinute>=1320||nowMinute<420))||
-      (schedules.optBoolean("Study",false)&&nowMinute>=960&&nowMinute<1080)||
-      (schedules.optBoolean("Me time",false)&&nowMinute>=1200&&nowMinute<1260)
+    val minute=c.get(Calendar.HOUR_OF_DAY)*60+c.get(Calendar.MINUTE)
+    val today=c.get(Calendar.DAY_OF_WEEK)-1 // Sunday=0
+    val yesterday=(today+6)%7
+    for(name in listOf("Sleep","Study","Me time")){
+      val entry=root.optJSONObject(name)
+      if(entry==null){
+        // Legacy boolean schedules remain supported.
+        if(root.optBoolean(name,false)){
+          if(name=="Sleep"&&(minute>=1320||minute<420))return true
+          if(name=="Study"&&minute in 960 until 1080)return true
+          if(name=="Me time"&&minute in 1200 until 1260)return true
+        }
+        continue
+      }
+      if(!entry.optBoolean("enabled",false))continue
+      val begin=toMinute(entry.optString("start",""))?:continue
+      val end=toMinute(entry.optString("end",""))?:continue
+      if(begin==end)continue
+      val days=entry.optJSONArray("days")?:continue
+      fun selected(d:Int)= (0 until days.length()).any{days.optInt(it,-1)==d}
+      if(begin<end && selected(today) && minute in begin until end)return true
+      if(begin>end && ((selected(today)&&minute>=begin)||(selected(yesterday)&&minute<end)))return true
+    }
+    return false
+  }
+  private fun toMinute(raw:String):Int?{
+    if(!Regex("^(?:[01][0-9]|2[0-3]):[0-5][0-9]$").matches(raw))return null
+    return raw.substring(0,2).toInt()*60+raw.substring(3).toInt()
   }
   private fun usageGranted():Boolean {
     val ops=getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
