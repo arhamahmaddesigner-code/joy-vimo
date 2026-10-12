@@ -8,6 +8,7 @@ on:
       - "App.js"
       - "app.json"
       - "package.json"
+      - "assets/**"
       - "modules/**"
       - "scripts/**"
       - ".github/workflows/android-qa-apk.yml"
@@ -18,44 +19,43 @@ permissions:
 jobs:
   build:
     name: Compile installable APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Node 22
+      - name: Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - name: Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-      - name: Inspect preinstalled Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -lah "$ANDROID_HOME" || true
-          test -d "$ANDROID_HOME/platforms"
-      - name: Install project dependencies
+      - name: Android SDK
+        run: test -d "$ANDROID_HOME/platforms"
+      - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Match Expo SDK versions
+      - name: Match Expo SDK dependencies
         run: npx expo install --fix
         env:
           CI: '1'
-      - name: Generate Android native project
+      - name: Generate approved branding assets
+        run: npm run assets
+      - name: Generate Android project
         run: npx expo prebuild --platform android --clean --non-interactive
         env:
           CI: '1'
-      - name: Prepare temporary QA signing
+      - name: Prepare test-only signing
         run: python3 scripts/ensure_qa_signing.py
-      - name: Bundle JavaScript and build release APK
+      - name: Build bundled QA APK
         run: cd android && ./gradlew :app:assembleRelease --no-daemon --stacktrace
-      - name: Confirm APK exists
+      - name: Confirm APK generated
         run: test -n "$(find android/app/build/outputs/apk/release -name '*.apk' -type f -print -quit)"
-      - name: Upload Realme C71 APK
+      - name: Upload QA APK
         uses: actions/upload-artifact@v4
         with:
-          name: JOY-VIMO-Realme-C71-APK
+          name: JOY-VIMO-v0.7-Realme-C71-APK
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14

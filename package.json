@@ -1,17 +1,22 @@
 {
   "name": "joy-vimo",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "main": "expo/AppEntry",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "check": "node --check App.js"
+    "assets": "node scripts/make-assets.mjs"
   },
   "dependencies": {
     "expo": "~57.0.17",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "@react-native-async-storage/async-storage": "2.2.0"
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo-linear-gradient": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-svg": "*",
+    "lucide-react-native": "^0.468.0",
+    "sharp": "^0.34.4"
   }
 }

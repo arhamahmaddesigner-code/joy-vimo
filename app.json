@@ -2,20 +2,25 @@
   "expo": {
     "name": "JOY VIMO",
     "slug": "joy-vimo",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "orientation": "portrait",
     "scheme": "joyvimo",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "android": {
       "package": "com.joyvimo.app",
-      "versionCode": 7,
+      "versionCode": 8,
       "permissions": [
         "android.permission.PACKAGE_USAGE_STATS"
       ],
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#251064"
+      }
     },
     "plugins": [],
-    "description": "Private QA APK. Android usage permission supports measurement only, not external app blocking."
+    "description": "Android-first private QA app. Usage monitoring requires Android permission. External blocking not yet implemented."
   }
 }
