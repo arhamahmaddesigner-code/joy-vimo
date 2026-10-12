@@ -60,20 +60,31 @@ class JoyVimoFocusService : AccessibilityService() {
   private var lastScanMs=0L
   private var lastInstagramScanMs=0L
   private var lastTiktokScanMs=0L
+  private var activeSessionMs=0L
+  private var lastMonotonicTickMs=android.os.SystemClock.elapsedRealtime()
+  private var lastTrackedPkg:String?=null
   private val watchdog=object:Runnable {
     override fun run() {
-      try { checkCurrentSession() }catch(_:Exception){}
+      try {
+        prefs.edit().putLong("service_heartbeat_at",System.currentTimeMillis()).apply()
+        checkCurrentSession()
+      }catch(_:Exception){}
       handler.postDelayed(this,5000L)
     }
   }
 
   override fun onServiceConnected() {
     super.onServiceConnected()
+    prefs.edit().putLong("service_connected_at",System.currentTimeMillis())
+      .putLong("service_heartbeat_at",System.currentTimeMillis())
+      .putBoolean("service_shutdown_cleanly",false).apply()
+    lastMonotonicTickMs=android.os.SystemClock.elapsedRealtime()
     handler.removeCallbacks(watchdog)
     handler.postDelayed(watchdog,5000L)
   }
   override fun onDestroy() {
     handler.removeCallbacks(watchdog)
+    prefs.edit().putBoolean("service_shutdown_cleanly",true).apply()
     super.onDestroy()
   }
 
@@ -88,6 +99,10 @@ class JoyVimoFocusService : AccessibilityService() {
     if(kind==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && pkg!=foregroundPkg) {
       foregroundPkg=pkg
       enteredAtMs=now
+      // Switches to another app start a fresh monitored session.
+      activeSessionMs=0L
+      lastTrackedPkg=pkg
+      lastMonotonicTickMs=android.os.SystemClock.elapsedRealtime()
       if(pkg!=packageName)recordOpening(pkg,now)
     }
     if(pkg=="com.android.chrome" && protectionRunning() && prefs.getBoolean("domain_rules_enabled",false)) {
@@ -278,11 +293,17 @@ class JoyVimoFocusService : AccessibilityService() {
   }catch(_:Exception){0L}
 
   private fun checkCurrentSession() {
+    val nowTick=android.os.SystemClock.elapsedRealtime()
+    val elapsed=(nowTick-lastMonotonicTickMs).coerceAtLeast(0L)
+    lastMonotonicTickMs=nowTick
     val pkg=foregroundPkg?:return
     val name=tracked[pkg]?:return
-    if(!isActive() || System.currentTimeMillis()<prefs.getLong("safety_pause_until",0L))return
     val power=getSystemService(Context.POWER_SERVICE) as PowerManager
-    if(!power.isInteractive)return
+    // Never count the long gap across device sleep, process suspension or an
+    // inaccessible foreground window as active session use.
+    if(!power.isInteractive || elapsed>12000L || pkg!=lastTrackedPkg)return
+    if(!isActive() || System.currentTimeMillis()<prefs.getLong("safety_pause_until",0L))return
+    activeSessionMs=(activeSessionMs+elapsed).coerceAtMost(12L*60L*60L*1000L)
     val rule=getRule(name)?:return
     if(!rule.optBoolean("enabled",false))return
     if(inPresetSchedule()) {
@@ -290,7 +311,7 @@ class JoyVimoFocusService : AccessibilityService() {
       return
     }
     val maxMs=rule.optInt("session",10).coerceIn(1,120)*60000L
-    if(enteredAtMs>0 && System.currentTimeMillis()-enteredAtMs>=maxMs){
+    if(activeSessionMs>=maxMs){
       redirect(name,pkg,"session_limit")
       return
     }
@@ -313,6 +334,8 @@ class JoyVimoFocusService : AccessibilityService() {
     if(!back) {
       foregroundPkg=null
       enteredAtMs=0L
+      activeSessionMs=0L
+      lastTrackedPkg=null
     }
   }
   override fun onInterrupt(){}
