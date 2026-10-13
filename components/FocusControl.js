@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {Alert,AppState,Pressable,StyleSheet,Switch,Text,View} from 'react-native';
 
 const accent='#6737F5',ink='#21134C',muted='#716C8A';
-const disclosure='Optional Focus Shield uses Android Accessibility to see only which selected app opens. When your opening or daily time limit is reached, it can send you to the Home screen. Your selected opening delay may display a mindful pause before continuing; a safety pause is always available. For optional YouTube Shorts detection it checks YouTube screen layout resource IDs only, not screen text, messages, passwords, video frames or URLs. This feature works only after you opt in, enable Android Accessibility, and turn on enforcement. You can stop it here at any time.';
+const disclosure='Optional Android Accessibility is a powerful permission. JOY VIMO observes selected app openings and, only with separate opt-ins, checks YouTube/Instagram/TikTok screen resource IDs or temporarily reads the Chrome address-bar hostname for your custom domain rules. The app does not save full URLs, browsing history, messages, passwords, screen text from social feeds, or video frames. It may interrupt a selected app after its configured limit. Android can grant broader UI access than these implemented checks use. You can turn protection off, revoke consent, or use the emergency safety pause at any time.'
 
 export default function FocusControl({nativeModule,age,rules,schedules,domainRulesEnabled=false,domains=[]}) {
   const [consent,setConsent]=useState(false);
