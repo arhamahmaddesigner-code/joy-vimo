@@ -9,3 +9,4 @@ Verify latest custom goals and native three-denial cooldown in integrated Androi
 Verify Joy Pick and goal-aware Companion integration, private compile only, no APK upload. 2026-10-14.
 Verify goal-progress Home and Challenges UI in private Android integration compile. No APK upload. 2026-10-14.
 Run private integrated Android QA including new custom goals automated regression tests. No APK upload. 2026-10-14.
+Verify native cooldown safety/static guard and custom goals tests on private integrated Android CI. No APK upload. 2026-10-14.
