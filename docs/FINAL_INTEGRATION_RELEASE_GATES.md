@@ -8,17 +8,23 @@ Status: **NOT YET COMPLETE**. Do not label any artifact final, or request owner 
 - Experimental opt-in Chrome domain/YouTube Shorts/Instagram Reels/TikTok feed interruption
 - Editable weekday schedules, reversible voluntary strict mode, Android diagnostics
 - Private positive actions, XP, milestones, 7-day progress and guided support
-- Opt-in adult leaderboard migration in supabase/migrations (schema only; NOT deployed)
+- Opt-in adult leaderboard migration in supabase/migrations (deployed only to dedicated JOY VIMO Supabase project)
 - Manual-only QA APK workflow and static privacy preflight, Android no-backup plugin
 
-## Unresolved blockers (must not disguise)
-1. **Online backend:** No dedicated active JOY VIMO Supabase project exists. The only connected project is ORYX Development and is inactive; do not reuse, modify, or expose it without explicit permission. Separate organization/project/cost approval needed. Migration has not been executed. No live multiplayer leaderboard is available.
-2. **Authentication and ranking:** Identity, region controls, privacy policy, age assurance, abuse/spam mitigation, moderation, opt-in/delete behavior and score authenticity need hardening and backend tests. Existing schema assumes adult self-declaration, which is not verified age assurance.
-3. **Content:** Safe activities are offline and finite. Curated external streaming-video feed is NOT built; integrating live media requires licensed/approved sources, content moderation, child safety and privacy.
-4. **Android:** Current source since the last successful Actions run has NOT been compiled. Accessibility UI heuristics, pause screen, night rollover, Chrome URL parsing, permission revocation, battery behavior and OEM restart need native compiler/test on Realme C71.
-5. **Signing:** Current workflow creates a new disposable test certificate on GitHub runners, so installs may require uninstall and destroy local data. Dedicated stable private QA signing key must be securely created and put in Actions secrets (not source) and safe data export/migration reviewed.
-6. **Security:** Repo's preflight is static, not a penetration test. Audit dependencies, permissions, data storage, no-backup behavior, native Accessibility APIs and app security before enabling real users.
-7. **Release policy:** Play Store and App Store HOLD until explicit owner approval. Apps for children require verified safeguards; current local guardian acknowledgement does not suffice.
+## Verified status (2026-10-13)
+1. **Backend isolated and deployed:** JOY VIMO has a separate Supabase organization and active dedicated project `hhrpwnsyfrdcrnusahkd` (Singapore). Adult leaderboard migration has been applied; both tables have RLS. Never touch ORYX Development.
+2. **Native compilation:** GitHub internal compile run [38382511047](https://github.com/arhamahmaddesigner-code/joy-vimo/actions/runs/38382511047) **PASSED**, including unit/privacy checks. More recent weekly UI and YouTube Shorts heuristic changes are compiling in [38392213517](https://github.com/arhamahmaddesigner-code/joy-vimo/actions/runs/38392213517); do not assume this newer run succeeds until checked.
+3. **Authentication, scores, and age:** Only database permissions/anonymous restrictions verified. Email OTP, 2+ real account isolation and cross-user RPC flows still require practical tests. Self-reported adult status is not age assurance; score claims remain self-reported and susceptible to scripted gaming. Security advisor's five authenticated SECURITY DEFINER RPC warnings need explicit capability review.
+4. **Focus Shield:** Source includes consented native Accessibility, app/session/open limits, schedules, safe bypass and experimental selective feed/domain checks. OS/OEM behavior and website/video coverage require Realme C71 tests; no universal content filtering claim.
+5. **Signing:** Owner-facing artifact upload is blocked unless stable signing credentials are provided as encrypted GitHub Secrets. Secrets are not present or verified through this connector. Internal compile APK is deliberately not distributed.
+6. **Content:** Finite guided offline activities work in source; curated/licensed streaming video feed, moderation, creator permissions and age-suitable sourcing are **not yet implemented**.
+7. **Design & release:** Premium screens/animations and full mobile accessibility regression remain. Under-13 online safeguards are not verified. No public Play Store/iOS publishing without owner approval.
+
+## QA definition of done
+- Latest main source compiles with CI unit/privacy checks; zero unexplained blockers.
+- Positive and negative backend tests: anonymous blocked, own-row and other-user isolation, OTP verify, opt in, scores/daily cap, region/global sorting, opt out/delete, spam/abuse behavior.
+- Realme C71 manual checklist includes all permissions, app/Shorts/Reels/TikTok/Chrome scenarios, keyguard, OS restart, background kills, strict schedules and emergency bypass.
+- Only after stable protected QA keystore is configured, produce ONE consolidated privately signed review APK and record signing certificate fingerprint/versionCode to preserve safe upgrades.
 
 ## What the owner asked for
 ONE consolidated full-feature private Android APK, then ONE Realme C71 video review. No per-feature reinstall requests. Do not promise that this QA iteration is a medical cure, and do not shame someone for setbacks.
