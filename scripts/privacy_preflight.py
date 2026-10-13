@@ -17,7 +17,7 @@ def must(check,why):
 must("clearFocusConfig" in module and "clearFocusConfig" in app,"Native focus settings must be wiped on data deletion")
 must("consented" in module and "consented" in service,"Native enforcement requires recorded opt-in")
 must('age!="kid"' in module and 'getString("age","kid")!="kid"' in service,"Parent-supported mode must fail closed")
-must('android:canRetrieveWindowContent="true"' in config and 'flagReportViewIds' in config,"YouTube screen resource-ID capability must be declared")
+must('android:canRetrieveWindowContent="true"' in config and 'android:accessibilityFlags="flagReportViewIds"' in config,"YouTube screen resource-ID capability must be declared")
 must("youtubeShorts" in (root/"components/FocusControl.js").read_text() or "setShorts" in (root/"components/FocusControl.js").read_text(),"Separate YouTube Shorts opt-in must exist")
 must("checkChromeDomain" in service and "domain_rules_enabled" in service,"Website rules must remain opt-in")
 must("findAccessibilityNodeInfosByViewId" in service and "com.android.chrome:id/url_bar" in service,"Limit domain inspection to Chrome URL bar")
