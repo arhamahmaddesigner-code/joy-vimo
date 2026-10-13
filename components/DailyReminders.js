@@ -4,6 +4,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 const KEY='@joyvimo/daily-reminder-v1';
 const TIMES=[{hour:8,label:'8 AM'},{hour:13,label:'1 PM'},{hour:18,label:'6 PM'},{hour:21,label:'9 PM'}];
+export async function cancelSavedReminder(){
+ const raw=await AsyncStorage.getItem(KEY);
+ if(raw){
+  try{const item=JSON.parse(raw);if(item.id)await Notifications.cancelScheduledNotificationAsync(item.id)}catch{}
+ }
+ await AsyncStorage.removeItem(KEY);
+}
 export default function DailyReminders({age}){
  const [state,setState]=useState({enabled:false,hour:21,id:null});
  const [busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
