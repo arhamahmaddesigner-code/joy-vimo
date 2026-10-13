@@ -2,7 +2,7 @@
   "expo": {
     "name": "JOY VIMO",
     "slug": "joy-vimo",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "orientation": "portrait",
     "scheme": "joyvimo",
     "icon": "./assets/icon.png",
@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "android": {
       "package": "com.joyvimo.app",
-      "versionCode": 9,
+      "versionCode": 10,
       "permissions": [
         "android.permission.PACKAGE_USAGE_STATS"
       ],
