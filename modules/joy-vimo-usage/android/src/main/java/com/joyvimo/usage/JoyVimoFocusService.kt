@@ -195,8 +195,16 @@ class JoyVimoFocusService : AccessibilityService() {
     val root=rootInActiveWindow?:return false
     if(root.packageName?.toString()!=ytPackage)return false
     return try {
+      // Require a visible substantial player, not just a background tab ID.
+      val metrics=resources.displayMetrics
+      val screenArea=metrics.widthPixels.toLong()*metrics.heightPixels.toLong()
       shortsPlayerIds.any { id ->
-        root.findAccessibilityNodeInfosByViewId("$ytPackage:id/$id")?.isNotEmpty()==true
+        root.findAccessibilityNodeInfosByViewId("$ytPackage:id/$id")?.any { node ->
+          val bounds=Rect()
+          node.getBoundsInScreen(bounds)
+          bounds.width().toLong()*bounds.height().toLong()*100L>=screenArea*25L &&
+            bounds.height()>=metrics.heightPixels/3
+        } == true
       }
     }catch(_:Exception){false}
   }
