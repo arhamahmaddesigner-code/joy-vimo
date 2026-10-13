@@ -1,4 +1,5 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {ACTIVITIES} from '../lib/offlineActivities';
