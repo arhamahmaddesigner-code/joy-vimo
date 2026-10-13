@@ -13,7 +13,7 @@ export default function AdultLeaderboard({age}){
    const {data:profile,error:profileError}=await db.from('joy_public_profiles').select('visible').eq('user_id',s.user.id).maybeSingle();
    if(profileError)throw profileError;
    setMember(!!profile?.visible);
-   if(profile?.visible)await getRankings();else setRows([]);
+   if(profile?.visible)await getRankings();else{setRows([]);setLoadError('');}
   }else{setRows([]);setMember(false)}
  }
  async function getRankings(which=scope,region=country){
