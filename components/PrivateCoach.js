@@ -36,7 +36,6 @@ export default function PrivateCoach({age,onBack,claims={}}){
  const markPlan=id=>setState(prev=>({...prev,plan:{...prev.plan,[id]:!prev.plan[id]}}));
  const reset=()=>{setStep(0);setSeconds(60);setPlaying(false)};
  const completeMoment=()=>{
-  mark('intentional-pause');
   setState(prev=>({...prev,done:{...prev.done,[key+'intentional-pause']:true},notes:prev.notes+1}));
   Alert.alert('You chose a helpful step','Your private progress is recorded on this device. You can return whenever you need support.');
   reset();
