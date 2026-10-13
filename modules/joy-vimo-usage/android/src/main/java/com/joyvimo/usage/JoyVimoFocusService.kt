@@ -144,11 +144,25 @@ class JoyVimoFocusService : AccessibilityService() {
     if(now-lastEntryMs<800L)return
     lastEntryMs=now
     val day=dayKey()
+    // A voluntarily configured 3-denial cooldown, scoped to this app and day.
+    // Safety pause, disabling Focus Shield and Android permission revocation win.
+    val recordedDay=prefs.getString("denied_day_"+pkg,"")
+    val cooldown=if(recordedDay==day)prefs.getLong("denied_cooldown_"+pkg,0L)else 0L
+    if(now<cooldown){
+      redirect(name,pkg,"three_attempt_cooldown")
+      return
+    }
     val before=if(prefs.getString("day_"+pkg,"")==day)prefs.getInt("opens_"+pkg,0)else 0
     val after=(before+1).coerceAtMost(100000)
     prefs.edit().putString("day_"+pkg,day).putInt("opens_"+pkg,after).apply()
     if(after>rule.optInt("opens",3).coerceIn(1,30)){
-      redirect(name,pkg,"opening_limit")
+      val denied=if(recordedDay==day)prefs.getInt("denied_attempts_"+pkg,0)else 0
+      val nextDenied=(denied+1).coerceAtMost(3)
+      val lockUntil=if(nextDenied>=3)now+15L*60L*1000L else 0L
+      prefs.edit().putString("denied_day_"+pkg,day)
+        .putInt("denied_attempts_"+pkg,if(lockUntil>0L)0 else nextDenied)
+        .putLong("denied_cooldown_"+pkg,lockUntil).apply()
+      redirect(name,pkg,if(lockUntil>0L)"three_attempt_cooldown" else "opening_limit")
       return
     }
     val delay=rule.optInt("delay",0).coerceIn(0,30)
