@@ -109,6 +109,14 @@ class JoyVimoUsageModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("JoyVimoUsage")
     Function("hasUsageAccess"){access()}
+    Function("getSupportedAppsInstalled"){
+      // Only checks four known packages declared in AndroidManifest queries.
+      // No installed-package enumeration or QUERY_ALL_PACKAGES permission.
+      targets.mapValues { (_,pkg) ->
+        try{ context().packageManager.getLaunchIntentForPackage(pkg)!=null }
+        catch(_:Exception){false}
+      }
+    }
     Function("getPrivateDnsSummary"){
       val c=context()
       val mode=try{Settings.Global.getString(c.contentResolver,"private_dns_mode")?:"unknown"}
