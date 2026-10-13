@@ -3,6 +3,7 @@ package com.joyvimo.usage
 import android.accessibilityservice.AccessibilityService
 import android.graphics.Rect
 import android.app.AppOpsManager
+import android.app.KeyguardManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -172,7 +173,14 @@ class JoyVimoFocusService : AccessibilityService() {
     prefs.getBoolean("consented",false)&&prefs.getBoolean("enforcing",false)&&
       prefs.getString("age","kid")!="kid"
 
-  private fun protectionRunning():Boolean = isActive() && System.currentTimeMillis()>=prefs.getLong("safety_pause_until",0L)
+  private fun isDeviceAccessible():Boolean {
+    val power=getSystemService(Context.POWER_SERVICE) as PowerManager
+    val keyguard=getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+    return power.isInteractive && !keyguard.isKeyguardLocked
+  }
+  private fun protectionRunning():Boolean =
+    isActive() && isDeviceAccessible() &&
+      System.currentTimeMillis()>=prefs.getLong("safety_pause_until",0L)
 
   private fun getRule(name:String):JSONObject? {
     val rules=try{JSONObject(prefs.getString("rules","{}")?:"{}")}catch(_:Exception){JSONObject()}
@@ -298,10 +306,9 @@ class JoyVimoFocusService : AccessibilityService() {
     lastMonotonicTickMs=nowTick
     val pkg=foregroundPkg?:return
     val name=tracked[pkg]?:return
-    val power=getSystemService(Context.POWER_SERVICE) as PowerManager
-    // Never count the long gap across device sleep, process suspension or an
-    // inaccessible foreground window as active session use.
-    if(!power.isInteractive || elapsed>12000L || pkg!=lastTrackedPkg)return
+    // Never count the long gap across device sleep, keyguard, process
+    // suspension, or an inaccessible foreground window as active use.
+    if(!isDeviceAccessible() || elapsed>12000L || pkg!=lastTrackedPkg)return
     if(!isActive() || System.currentTimeMillis()<prefs.getLong("safety_pause_until",0L))return
     activeSessionMs=(activeSessionMs+elapsed).coerceAtMost(12L*60L*60L*1000L)
     val rule=getRule(name)?:return
