@@ -31,6 +31,11 @@ pause=(root/"modules/joy-vimo-usage/android/src/main/java/com/joyvimo/usage/JoyV
 must("JoyVimoOpeningPauseActivity" in manifest and 'android:exported="false"' in manifest,"Pause Activity must not be exported")
 must("safety_pause_until" in service and "pauseFocusSafely" in module,"Emergency pause must be available")
 must("opening_bypass_until_" in service and "opening_bypass_until_" in pause,"Opening pause must guard against reopen loops")
+# Three-denial cooldown must be scoped per app and per day, and cannot trap users.
+must('denied_day_'+ '"' in service and 'denied_attempts_' in service and 'denied_cooldown_' in service,"Native three-denial counters and cooldown must exist")
+must('nextDenied>=3' in service and '15L*60L*1000L' in service,"Three denials must start a bounded 15-minute cooldown")
+must('now<safetyUntil' in service and 'if(!isActive())return' in service,"Emergency pause and opt-out must bypass attempt counting")
+must('three_attempt_cooldown' in service and 'redirect(name,pkg' in service,"Cooldown must use existing redirect path")
 must("delay" in service and 'put("delay"' in module,"Per-app opening delay must reach native service")
 must("Go Home" in pause and "Safety pause" in pause,"Pause screen must offer safe exit and temporary bypass")
 must("protectionRunning()" in service and service.count("protectionRunning()")>=5,"All feed/website interventions must respect safety pause")
