@@ -63,6 +63,9 @@ must("joy_weekly_leaderboard" in leaderboard and "p_country" in leaderboard,"Cou
 must("joy_leave_leaderboard" in leaderboard and "joy_delete_leaderboard_data" in leaderboard,"Online opt-out and delete controls must remain present")
 must("age==='adult'" in leaderboard,"Public online leaderboard must remain adult-only")
 must("EXPO_PUBLIC_JOY_SUPABASE" in (root/"lib/joySupabase.js").read_text(),"Dedicated backend config required")
+must("getSupportedAppsInstalled" in module and "getSupportedAppsInstalled" in app,"Supported app presence must be shown without broad query permission")
+must("<queries>" in manifest and "QUERY_ALL_PACKAGES" not in manifest,"Declare only known packages for app visibility")
+must("cancelSavedReminder" in app,"Local erase must also cancel daily reminders")
 must("expo" in package["dependencies"],"Missing Expo dependency")
 for hazard in ["READ_SMS","READ_CONTACTS","QUERY_ALL_PACKAGES","REQUEST_INSTALL_PACKAGES","READ_CALL_LOG"]:
     must(hazard not in manifest,"Unexpected sensitive permission in manifest: "+hazard)
