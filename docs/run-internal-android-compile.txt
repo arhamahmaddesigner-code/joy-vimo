@@ -1,1 +1,2 @@
 One-time internal integration trigger: validate latest native Android, tests and signing. No APK uploaded. 2026-10-13.
+Re-run after accessibilityFlags AAPT2 fix (internal-only, no APK distribution). 2026-10-13.
