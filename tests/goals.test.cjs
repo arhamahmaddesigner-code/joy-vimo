@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');
+const {DEFAULT_GOALS,normalizeGoals,goalProgress}=require('../lib/goals');
+assert.deepEqual(normalizeGoals(),DEFAULT_GOALS);
+assert.deepEqual(normalizeGoals({dailyActions:3,weeklyActiveDays:6}),{dailyActions:3,weeklyActiveDays:6});
+assert.deepEqual(normalizeGoals({dailyActions:0,weeklyActiveDays:8}),DEFAULT_GOALS);
+assert.deepEqual(normalizeGoals({dailyActions:2.5,weeklyActiveDays:'bad'}),DEFAULT_GOALS);
+assert.equal(goalProgress({dailyActions:2,weeklyActiveDays:4},1,3).dailyMet,false);
+assert.equal(goalProgress({dailyActions:2,weeklyActiveDays:4},2,4).weeklyMet,true);
+assert.equal(goalProgress({dailyActions:2,weeklyActiveDays:4},99,99).dailyDone,2);
+assert.equal(goalProgress({dailyActions:2,weeklyActiveDays:4},99,99).weeklyDone,4);
+assert.equal(goalProgress(null,-5,-5).dailyDone,0);
+console.log('PASS: bounded personal daily/weekly goals and progress');
