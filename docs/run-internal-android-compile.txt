@@ -3,3 +3,4 @@ Re-run after accessibilityFlags AAPT2 fix (internal-only, no APK distribution). 
 Internal regression compile after weekly-progress and Shorts geometry fixes; no APK artifact upload. 2026-10-13.
 Final consolidated source checkpoint after adult leaderboard read gate, coach state fix and UI changes. No APK upload. 2026-10-13.
 Verify locally persistent Joy Feed hide/restore code and preflight, internal-only. 2026-10-13.
+Integration QA: companion, local data export and opt-in daily reminders; do not upload APK. 2026-10-13.
