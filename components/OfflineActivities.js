@@ -9,6 +9,9 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
  const [current,setCurrent]=useState(null);
  const [step,setStep]=useState(0);
  const [hidden,setHidden]=useState([]);
+ useEffect(()=>{let live=true;AsyncStorage.getItem('@joyvimo/joy-feed-hidden-v1').then(raw=>{if(live&&raw){try{const a=JSON.parse(raw);if(Array.isArray(a))setHidden(a.filter(x=>typeof x==='string'))}catch{}}}).catch(()=>{});return()=>{live=false}},[]);
+ function hide(id){const next=[...new Set([...hidden,id])];setHidden(next);AsyncStorage.setItem('@joyvimo/joy-feed-hidden-v1',JSON.stringify(next)).catch(()=>{})}
+ function restore(){setHidden([]);AsyncStorage.removeItem('@joyvimo/joy-feed-hidden-v1').catch(()=>{})}
  const activities=ACTIVITIES.filter(x=>interests.includes(x.topic)&&!hidden.includes(x.id));
  const today=new Date(),key=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  return <View>
@@ -38,11 +41,11 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
        <Text style={s.title}>{item.title}</Text>
        <Text style={s.detail}>{item.body}</Text>
        <Pressable accessibilityRole="button" onPress={()=>{setCurrent(item);setStep(0)}} style={s.primary}><Text style={s.white}>{completed?'Enjoy again':'Start activity · +10 XP'}</Text></Pressable>
-       <Pressable accessibilityRole="button" onPress={()=>setHidden(x=>[...x,item.id])} style={s.secondary}><Text style={s.secondaryText}>Not interested</Text></Pressable>
+       <Pressable accessibilityRole="button" onPress={()=>hide(item.id)} style={s.secondary}><Text style={s.secondaryText}>Not interested</Text></Pressable>
       </View>;
    })}
    {!current&&activities.length===0?<View style={s.card}><Text style={s.title}>Choose something that feels right</Text><Text style={s.detail}>Select a topic above or restore hidden activities.</Text></View>:null}
-   {!current&&hidden.length>0?<Pressable accessibilityRole="button" onPress={()=>setHidden([])} style={s.secondary}><Text style={s.secondaryText}>Restore hidden activities</Text></Pressable>:null}
+   {!current&&hidden.length>0?<Pressable accessibilityRole="button" onPress={restore} style={s.secondary}><Text style={s.secondaryText}>Restore hidden activities</Text></Pressable>:null}
    <Text style={[s.detail,{marginVertical:16,fontSize:12}]}>Activity completion is self-reported. It is not a medical recovery score and does not monitor what you do in other apps.</Text>
  </View>;
 }
