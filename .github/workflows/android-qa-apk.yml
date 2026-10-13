@@ -4,6 +4,12 @@ name: Android QA APK
 # a new owner-facing APK or trigger unnecessary install requests.
 on:
   workflow_dispatch:
+    inputs:
+      publish_private_apk:
+        description: 'Upload owner-facing APK only with stable signing secrets'
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -46,13 +52,26 @@ jobs:
         run: npx expo prebuild --platform android --clean --non-interactive
         env:
           CI: '1'
-      - name: Prepare test-only signing
+      - name: Configure signing (internal compile or stable private APK)
         run: python3 scripts/ensure_qa_signing.py
+        env:
+          JOY_PUBLISH_PRIVATE_APK: ${{ inputs.publish_private_apk }}
+          JOY_QA_KEYSTORE_BASE64: ${{ secrets.JOY_QA_KEYSTORE_BASE64 }}
+          JOY_QA_STORE_PASSWORD: ${{ secrets.JOY_QA_STORE_PASSWORD }}
+          JOY_QA_KEY_ALIAS: ${{ secrets.JOY_QA_KEY_ALIAS }}
+          JOY_QA_KEY_PASSWORD: ${{ secrets.JOY_QA_KEY_PASSWORD }}
       - name: Build bundled QA APK
         run: cd android && ./gradlew :app:assembleRelease --no-daemon --stacktrace
       - name: Confirm APK generated
         run: test -n "$(find android/app/build/outputs/apk/release -name '*.apk' -type f -print -quit)"
+      - name: Verify stable private signing certificate
+        if: ${{ inputs.publish_private_apk }}
+        run: |
+          test -n "$JOY_QA_KEYSTORE_PATH"
+          test -f "$JOY_QA_KEYSTORE_PATH"
+          echo 'Private signing certificate was loaded from protected secrets.'
       - name: Upload QA APK
+        if: ${{ inputs.publish_private_apk }}
         uses: actions/upload-artifact@v4
         with:
           name: JOY-VIMO-Integrated-Private-QA-APK
