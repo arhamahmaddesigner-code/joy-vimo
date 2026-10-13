@@ -2,3 +2,4 @@ One-time internal integration trigger: validate latest native Android, tests and
 Re-run after accessibilityFlags AAPT2 fix (internal-only, no APK distribution). 2026-10-13.
 Internal regression compile after weekly-progress and Shorts geometry fixes; no APK artifact upload. 2026-10-13.
 Final consolidated source checkpoint after adult leaderboard read gate, coach state fix and UI changes. No APK upload. 2026-10-13.
+Verify locally persistent Joy Feed hide/restore code and preflight, internal-only. 2026-10-13.
