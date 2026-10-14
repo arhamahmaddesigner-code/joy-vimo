@@ -1,9 +1,11 @@
 const assert = require('node:assert/strict');
 const { qaVersionCode } = require('../scripts/qaVersion.cjs');
-assert.equal(qaVersionCode(1,10),10001);
-assert.equal(qaVersionCode('27',10),10027);
-assert.ok(qaVersionCode(28,10)>qaVersionCode(27,10));
-for (const invalid of [undefined,0,-1,1.5,'bad']) assert.throws(()=>qaVersionCode(invalid,10));
-assert.throws(()=>qaVersionCode(1,10001));
-assert.throws(()=>qaVersionCode(1,2100000001));
-console.log('PASS: monotonic private QA Android version codes');
+assert.equal(qaVersionCode(1,10,1),100021);
+assert.equal(qaVersionCode('27',10,1),100541);
+assert.equal(qaVersionCode(27,10,2),100542);
+assert.ok(qaVersionCode(28,10,1)>qaVersionCode(27,10,19));
+for (const invalid of [undefined,0,-1,1.5,'bad']) assert.throws(()=>qaVersionCode(invalid,10,1));
+for (const invalid of [undefined,0,-1,1.5,20]) assert.throws(()=>qaVersionCode(1,10,invalid));
+assert.throws(()=>qaVersionCode(1,100021,1));
+assert.throws(()=>qaVersionCode(110000000,10,1));
+console.log('PASS: monotonic unique version codes including run attempts');
