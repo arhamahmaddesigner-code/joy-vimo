@@ -46,6 +46,8 @@ must("startStrictMode" in module and 'remove("strict_until")' in module,"Strict 
 must("pauseFocusSafely" in module and "clearFocusConfig" in module,"Emergency bypass and revoke must remain available")
 must("ScheduleEditor" in app,"Editable schedule screen must be wired in")
 must("service_heartbeat_at" in service and "serviceHealthy" in module,"Service heartbeat health checks required")
+must("if(!protectionRunning())return" in service and "lastEntryByPackage[pkg]" in service,"App opening counts must respect lock/safety state and per-app duplicate events")
+must("lastEntryMs" not in service,"Global opening debounce must not suppress separate app launches")
 must("elapsedRealtime" in service and "activeSessionMs" in service,"Session timing must use monotonic active time")
 must("openBatteryOptimizationSettings" in module,"User-facing battery settings access required")
 must("android.permission.BIND_ACCESSIBILITY_SERVICE" in manifest,"Accessibility must use system-protected binding permission")
