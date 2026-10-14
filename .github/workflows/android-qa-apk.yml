@@ -71,12 +71,19 @@ jobs:
           JOY_QA_KEY_ALIAS: ${{ secrets.JOY_QA_KEY_ALIAS }}
           JOY_QA_KEY_PASSWORD: ${{ secrets.JOY_QA_KEY_PASSWORD }}
       - name: Build bundled QA APK
+        env:
+          JOY_QA_STORE_PASSWORD: ${{ secrets.JOY_QA_STORE_PASSWORD }}
+          JOY_QA_KEY_ALIAS: ${{ secrets.JOY_QA_KEY_ALIAS }}
+          JOY_QA_KEY_PASSWORD: ${{ secrets.JOY_QA_KEY_PASSWORD }}
         run: cd android && ./gradlew :app:assembleRelease --no-daemon --stacktrace
       - name: Confirm APK generated
         run: test -n "$(find android/app/build/outputs/apk/release -name '*.apk' -type f -print -quit)"
       - name: Verify private APK signature and record fingerprint
         if: ${{ inputs.publish_private_apk }}
         shell: bash
+        env:
+          JOY_QA_STORE_PASSWORD: ${{ secrets.JOY_QA_STORE_PASSWORD }}
+          JOY_QA_KEY_ALIAS: ${{ secrets.JOY_QA_KEY_ALIAS }}
         run: |
           set -euo pipefail
           test -n "${JOY_QA_KEYSTORE_PATH:-}"
