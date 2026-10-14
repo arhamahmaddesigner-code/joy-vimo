@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict');
+const {makeFocusPayload}=require('../lib/focusSync');
+const data={age:'adult',rules:{TikTok:{opens:3}},schedules:{Sleep:false},domainRulesEnabled:true,domains:['example.com']};
+const status={optedIn:true,enforcing:true,youtubeShorts:true,instagramReels:false,tiktokFeed:true};
+assert.equal(makeFocusPayload(data,null),null);
+assert.equal(makeFocusPayload({...data,age:'kid'},status),null);
+assert.equal(makeFocusPayload(data,{optedIn:false}),null);
+const result=makeFocusPayload(data,status);
+assert.equal(result.enforcing,true);
+assert.equal(result.youtubeShorts,true);
+assert.equal(result.instagramReels,false);
+assert.equal(result.tiktokFeed,true);
+assert.deepEqual(result.rules,data.rules);
+assert.deepEqual(result.domains,['example.com']);
+assert.equal(makeFocusPayload({...data,age:'teen'},status).age,'teen');
+assert.equal(makeFocusPayload(data,{optedIn:true,enforcing:false}).enforcing,false);
+console.log('PASS: focus native sync preserves opt-ins and child restrictions');
