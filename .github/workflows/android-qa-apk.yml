@@ -65,12 +65,22 @@ jobs:
         run: cd android && ./gradlew :app:assembleRelease --no-daemon --stacktrace
       - name: Confirm APK generated
         run: test -n "$(find android/app/build/outputs/apk/release -name '*.apk' -type f -print -quit)"
-      - name: Verify stable private signing certificate
+      - name: Verify private APK signature and record fingerprint
         if: ${{ inputs.publish_private_apk }}
+        shell: bash
         run: |
-          test -n "$JOY_QA_KEYSTORE_PATH"
+          set -euo pipefail
+          test -n "${JOY_QA_KEYSTORE_PATH:-}"
           test -f "$JOY_QA_KEYSTORE_PATH"
-          echo 'Private signing certificate was loaded from protected secrets.'
+          apk=$(find android/app/build/outputs/apk/release -name '*.apk' -type f -print -quit)
+          test -n "$apk"
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$sdk"
+          apksigner=$(find "$sdk/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -1)
+          test -x "$apksigner"
+          "$apksigner" verify --verbose --print-certs "$apk" | tee private-apk-signature.txt
+          sha256sum "$apk" | tee private-apk-sha256.txt
+          echo "Verified APK signing details and SHA256 are in this run's logs."
       - name: Upload QA APK
         if: ${{ inputs.publish_private_apk }}
         uses: actions/upload-artifact@v4
