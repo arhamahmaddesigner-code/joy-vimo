@@ -20,11 +20,12 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Java
         uses: actions/setup-java@v5
         with:
@@ -89,7 +90,7 @@ jobs:
           echo "Verified APK signing details and SHA256 are in this run's logs."
       - name: Upload QA APK
         if: ${{ inputs.publish_private_apk }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: JOY-VIMO-Integrated-Private-QA-APK
           path: android/app/build/outputs/apk/release/*.apk
