@@ -46,6 +46,7 @@ jobs:
           node tests/progress.test.cjs
           node tests/goals.test.cjs
           node tests/focusStatus.test.cjs
+          node tests/focusSync.test.cjs
           python3 scripts/privacy_preflight.py
       - name: Generate assets
         run: npm run assets
