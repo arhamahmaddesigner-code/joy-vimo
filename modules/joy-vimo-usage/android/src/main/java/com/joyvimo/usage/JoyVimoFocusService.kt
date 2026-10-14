@@ -55,7 +55,8 @@ class JoyVimoFocusService : AccessibilityService() {
   private val handler=Handler(Looper.getMainLooper())
   private var foregroundPkg:String?=null
   private var enteredAtMs=0L
-  private var lastEntryMs=0L
+  // Debounce duplicate openings per package, not across unrelated apps.
+  private val lastEntryByPackage=mutableMapOf<String,Long>()
   private var lastRedirectMs=0L
   private var lastPauseLaunchMs=0L
   private var lastScanMs=0L
@@ -135,14 +136,17 @@ class JoyVimoFocusService : AccessibilityService() {
 
   private fun recordOpening(pkg:String,now:Long) {
     val name=tracked[pkg]?:return
-    if(!isActive())return
+    // Never count launches while the device is locked, non-interactive,
+    // protection disabled, or the safety pause is active.
+    if(!protectionRunning())return
     val safetyUntil=prefs.getLong("safety_pause_until",0L)
     if(now<safetyUntil)return
     if(now<prefs.getLong("opening_bypass_until_"+pkg,0L))return
     val rule=getRule(name)?:return
     if(!rule.optBoolean("enabled",false))return
-    if(now-lastEntryMs<800L)return
-    lastEntryMs=now
+    val lastPackageEntry=lastEntryByPackage[pkg]?:0L
+    if(now-lastPackageEntry<500L)return
+    lastEntryByPackage[pkg]=now
     val day=dayKey()
     // A voluntarily configured 3-denial cooldown, scoped to this app and day.
     // Safety pause, disabling Focus Shield and Android permission revocation win.
