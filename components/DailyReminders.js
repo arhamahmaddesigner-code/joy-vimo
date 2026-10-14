@@ -7,7 +7,9 @@ const TIMES=[{hour:8,label:'8 AM'},{hour:13,label:'1 PM'},{hour:18,label:'6 PM'}
 export async function cancelSavedReminder(){
  const raw=await AsyncStorage.getItem(KEY);
  if(raw){
-  try{const item=JSON.parse(raw);if(item.id)await Notifications.cancelScheduledNotificationAsync(item.id)}catch{}
+  let item;
+  try{item=JSON.parse(raw)}catch{throw new Error('Saved reminder record is unreadable')}
+  if(item.id)await Notifications.cancelScheduledNotificationAsync(item.id)
  }
  await AsyncStorage.removeItem(KEY);
 }
