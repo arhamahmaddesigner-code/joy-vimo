@@ -24,3 +24,10 @@ The current GitHub QA workflow creates a **new disposable Android debug signing 
 
 ## Product truth
 This is an evolving private QA candidate, not a completed clinical treatment or certified porn-blocker. It cannot detect harmful content within every third-party social feed. There is no guaranteed symptom cure or medically universal 'safe' daily screen-time limit.
+
+## Consolidated owner QA handoff prerequisites (2026-10-14)
+- Latest successful internal Android source compilation is not proof of physical-device functionality.
+- Owner-facing private APK requires four protected GitHub Actions secrets: `JOY_QA_KEYSTORE_BASE64`, `JOY_QA_STORE_PASSWORD`, `JOY_QA_KEY_ALIAS`, `JOY_QA_KEY_PASSWORD`. Do not paste any of these into chat or commit them.
+- Preserve the same keystore for future APK updates. Build workflow verifies APK signature, records certificate fingerprint and SHA-256 in restricted workflow logs before uploading the artifact.
+- Verify signed build on Realme C71: install/upgrade without data loss; three-denial cooldown and safety pause; device reboot/battery restrictions; consent and permissions; local export/erase; Joy Feed/companion/challenges at different font sizes.
+- Third-party entertainment video licensing, live authentication/backend security, and age-specific launch compliance remain separate blockers. Do not label the APK a finished public product.
