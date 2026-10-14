@@ -20,3 +20,4 @@ Validate fail-closed local erase, reminder cleanup and regression tests; interna
 Verify owned daily notifications, replacement and cleanup regression; internal Android compile only, do not upload APK. 2026-10-14.
 Verify accessible navigation labels, selected tab states and 44dp choices in integrated Android; private compile only. 2026-10-14.
 Fix Choice JSX missing closing brace after accessibility update; validate parser preflight and full native Android integration. No APK uploaded. 2026-10-14.
+Verify responsive mobile navigation at 360,390,430 dp and font scales 1,1.3,1.5 with Joy Feed accessibility and JSX checks. Internal Android compile only; no APK upload. 2026-10-14.
