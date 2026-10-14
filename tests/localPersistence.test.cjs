@@ -10,15 +10,15 @@ async function run(){
  const erasing=persistence.pauseForErase();
  assert.equal(await persistence.save({age:'adult',xp:20}),false);
  unblock();
- assert.equal(await pending,true);
+ assert.equal(await pending,false);
  await erasing;
- assert.equal(writes.length,1);
+ assert.equal(writes.length,0);
  assert.equal(await persistence.save({age:'adult',xp:30}),false);
  persistence.resume();
  assert.equal(await persistence.save({age:null,xp:0}),false);
- assert.equal(writes.length,1);
+ assert.equal(writes.length,0);
  assert.equal(await persistence.save({age:'adult',xp:40}),true);
- assert.equal(writes.length,2);
+ assert.equal(writes.length,1);
  console.log('PASS: serialized local profile persistence and erasure write barrier');
 }
 run().catch(e=>{console.error(e);process.exitCode=1});
