@@ -49,6 +49,7 @@ jobs:
           node tests/focusStatus.test.cjs
           node tests/focusSync.test.cjs
           node tests/localErase.test.cjs
+          node tests/localPersistence.test.cjs
           node tests/reminderScheduler.test.cjs
           node tests/mobileLayout.test.cjs
           node tests/qaVersion.test.cjs
