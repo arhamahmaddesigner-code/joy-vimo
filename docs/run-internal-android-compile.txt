@@ -18,3 +18,4 @@ Check native settings synchronization when app limits/schedules change, with vis
 Check single-parent Focus Shield synchronization; remove competing child auto-update; internal compilation only. 2026-10-14.
 Validate fail-closed local erase, reminder cleanup and regression tests; internal Android compile only, no owner APK artifact. 2026-10-14.
 Verify owned daily notifications, replacement and cleanup regression; internal Android compile only, do not upload APK. 2026-10-14.
+Verify accessible navigation labels, selected tab states and 44dp choices in integrated Android; private compile only. 2026-10-14.
