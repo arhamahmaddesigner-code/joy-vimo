@@ -103,7 +103,14 @@ class JoyVimoUsageModule : Module() {
       "instagramBlocks" to p.getInt("blocks_com.instagram.android",0),
       "tiktokBlocks" to p.getInt("blocks_com.zhiliaoapp.musically",0),
       "youtubeBlocks" to p.getInt("blocks_com.google.android.youtube",0),
-      "chromeBlocks" to p.getInt("blocks_com.android.chrome",0)
+      "chromeBlocks" to p.getInt("blocks_com.android.chrome",0),
+      "denialCooldowns" to targets.mapValues { (_,pkg) ->
+        val cal=Calendar.getInstance()
+        val today=cal.get(Calendar.YEAR).toString()+"-"+cal.get(Calendar.DAY_OF_YEAR)
+        val sameDay=p.getString("denied_day_"+pkg,"")==today
+        mapOf("denials" to (if(sameDay)p.getInt("denied_attempts_"+pkg,0) else 0),
+              "cooldownUntil" to (if(sameDay)p.getLong("denied_cooldown_"+pkg,0L) else 0L))
+      }
     )
   }
   override fun definition() = ModuleDefinition {
@@ -206,6 +213,9 @@ class JoyVimoUsageModule : Module() {
           put("minutes",rule.optInt("minutes",30).coerceIn(1,600))
           put("session",rule.optInt("session",10).coerceIn(1,120))
           put("delay",rule.optInt("delay",0).coerceIn(0,30))
+          put("cooldownEnabled",rule.optBoolean("cooldownEnabled",true))
+          put("denialLimit",rule.optInt("denialLimit",3).coerceIn(1,3))
+          put("cooldownMinutes",rule.optInt("cooldownMinutes",15).coerceIn(5,30))
         })
       }
       val current=context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
@@ -219,6 +229,16 @@ class JoyVimoUsageModule : Module() {
           throw IllegalStateException("Commitment window active: rules cannot change until it ends. Emergency pause or revoke consent remain available.")
         }
       }
+      // Turning off the cooldown for an app clears its previous denied attempts.
+      // This is a local user control, not a protection bypass for other rules.
+      val resetDenied=current.edit()
+      for((name,pkg) in targets){
+        if(!allowed.getJSONObject(name).optBoolean("cooldownEnabled",true)){
+          resetDenied.remove("denied_day_"+pkg).remove("denied_attempts_"+pkg)
+            .remove("denied_cooldown_"+pkg)
+        }
+      }
+      resetDenied.apply()
       context().getSharedPreferences(JoyVimoFocusService.STORE,Context.MODE_PRIVATE)
         .edit().putString("age",age).putBoolean("consented",consent)
         .putBoolean("enforcing",active).putBoolean("youtube_shorts",active && shorts)
