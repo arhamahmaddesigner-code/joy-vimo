@@ -3,7 +3,7 @@ const path = require('node:path');
 
 // Each manual QA workflow run gets a distinct, increasing Android versionCode.
 // Preserve the package ID and the stable signing certificate for device upgrades.
-function qaVersionCode(runNumber, baseCode = 10, runAttempt = 1) {
+function qaVersionCode(runNumber, baseCode = 10, runAttempt) {
   const run = Number(runNumber);
   const base = Number(baseCode);
   const attempt = Number(runAttempt);
