@@ -15,3 +15,4 @@ Verify adjustable Focus Shield per-app denied attempts and bounded cooldown; int
 Integrate real native denial/cooldown status UI, simulator alignment and status regression checks. Internal Android compile only; no APK upload. 2026-10-14.
 Validate Node 24 GitHub Actions upgrades for checkout/setup-node; internal Android compilation only, no APK upload. 2026-10-14.
 Check native settings synchronization when app limits/schedules change, with visible sync outcome and focused regression tests. Internal-only, no APK artifact. 2026-10-14.
+Check single-parent Focus Shield synchronization; remove competing child auto-update; internal compilation only. 2026-10-14.
