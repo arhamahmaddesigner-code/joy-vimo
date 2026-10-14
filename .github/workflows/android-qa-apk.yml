@@ -51,6 +51,7 @@ jobs:
           node tests/localErase.test.cjs
           node tests/reminderScheduler.test.cjs
           node tests/mobileLayout.test.cjs
+          node tests/qaVersion.test.cjs
       - name: Run privacy & release preflight
         run: python3 scripts/privacy_preflight.py
       - name: Fast JavaScript and JSX syntax preflight
@@ -58,6 +59,8 @@ jobs:
           node -e "const fs=require('fs');const babel=require('@babel/parser');for(const f of ['App.js',...fs.readdirSync('components').filter(x=>x.endsWith('.js')).map(x=>'components/'+x)])babel.parse(fs.readFileSync(f,'utf8'),{sourceType:'module',plugins:['jsx']});console.log('PASS: JSX syntax');"
       - name: Generate approved branding assets
         run: npm run assets
+      - name: Assign unique private QA versionCode
+        run: node scripts/qaVersion.cjs
       - name: Generate Android project
         run: npx expo prebuild --platform android --clean --non-interactive
         env:
