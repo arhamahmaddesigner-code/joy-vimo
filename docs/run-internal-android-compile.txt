@@ -27,3 +27,4 @@ Check automatic unique QA version code policy with unit tests and integrated And
 Check private QA version uniqueness for workflow reruns and updated APK identity release workflow contracts. Internal compile only, no APK upload. 2026-10-15.
 Fix missing workflow attempt validation in private APK version code helper; run tests and internal Android compile, no APK upload. 2026-10-15.
 Verify profile save serialization, privacy erasure barrier, no data resurrection, automated checks, and integrated Android build. Internal compile only. 2026-10-15.
+Verify Focus Shield lock-screen-safe opening counts and per-app debounce in integrated Android CI. Private internal build only; no APK upload. 2026-10-15.
