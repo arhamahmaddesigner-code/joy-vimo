@@ -57,6 +57,8 @@ must("Stable signing secrets missing" in signing and "JOY_QA_KEYSTORE_BASE64" in
 must(app_cfg["expo"]["android"]["package"]=="com.joyvimo.app","QA package ID unexpectedly changed")
 must("OfflineActivities" in app and "computeProgress" in app,"Offline activity and local progress flows required")
 must("JoyCompanion" in app and "PrivacyDataPanel" in app and "DailyReminders" in app,"New user-facing features must be wired into App.js")
+must("makeFocusPayload(data,status)" in app and "data.rules,data.schedules" in app,"One parent synchronization path must track rule and schedule changes")
+must("Native rule/schedule synchronization is owned by AppMain" in (root/"components/FocusControl.js").read_text(),"FocusControl must not duplicate parent native synchronization")
 must("expo-notifications" in package["dependencies"],"Local reminder dependency missing")
 feed=(root/"components/OfflineActivities.js").read_text()
 must("joy-feed-hidden-v1" in feed and "AsyncStorage.setItem" in feed and "AsyncStorage.removeItem" in feed,"Feed hidden preferences must persist and support restoring")
