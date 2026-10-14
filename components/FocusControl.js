@@ -38,10 +38,9 @@ export default function FocusControl({nativeModule,age,rules,schedules,domainRul
     }catch(error){Alert.alert('Cannot update Focus Shield','Please try again.');}
     finally{setBusy(false);}
   }
-  useEffect(()=>{
-    if(!allowed||!consent||!nativeModule?.setFocusConfig)return;
-    nativeModule.setFocusConfig(JSON.stringify({age,consented:true,enforcing:enabled,rules,schedules,youtubeShorts:shorts,instagramReels:!!nativeModule.getFocusStatus()?.instagramReels,tiktokFeed:!!nativeModule.getFocusStatus()?.tiktokFeed,domainRulesEnabled,domains})).catch(()=>{});
-  },[age,rules,schedules,domainRulesEnabled,domains,allowed,consent,enabled,shorts,nativeModule]);
+  // Native rule/schedule synchronization is owned by AppMain, which debounces
+  // settings changes. Keep only explicit permission/consent switch writes here
+  // to avoid racing an older configuration against a newer one.
   async function askConsent(){
     if(consent){await save(false,false);return;}
     Alert.alert('Optional Android Accessibility permission',disclosure,[
