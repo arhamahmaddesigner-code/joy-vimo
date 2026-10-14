@@ -35,7 +35,9 @@ must("opening_bypass_until_" in service and "opening_bypass_until_" in pause,"Op
 must('denied_day_'+ '"' in service and 'denied_attempts_' in service and 'denied_cooldown_' in service,"Native three-denial counters and cooldown must exist")
 must('nextDenied>=denialLimit' in service and 'cooldownMinutes' in service and 'coerceIn(5,30)' in service,"Configured denied attempts must start a bounded cooldown")
 must('cooldownEnabled' in service and 'denialLimit' in module and 'cooldownMinutes' in module,"Optional per-app cooldown must be validated by native code")
-must('now<safetyUntil' in service and 'if(!isActive())return' in service,"Emergency pause and opt-out must bypass attempt counting")
+opening=service.split('private fun recordOpening(pkg:String,now:Long)',1)[-1].split('private fun isActive()',1)[0]
+must('if(!protectionRunning())return' in opening and 'val safetyUntil=prefs.getLong("safety_pause_until",0L)' in opening and 'if(now<safetyUntil)return' in opening,"Emergency pause, disabled consent and locked device must bypass attempt counting")
+must('private fun protectionRunning():Boolean' in service and 'isActive() && isDeviceAccessible()' in service and 'System.currentTimeMillis()>=prefs.getLong("safety_pause_until",0L)' in service,"Central protection guard must verify consent, interactive unlock state and safety pause")
 must('three_attempt_cooldown' in service and 'redirect(name,pkg' in service,"Cooldown must use existing redirect path")
 must("delay" in service and 'put("delay"' in module,"Per-app opening delay must reach native service")
 must("Go Home" in pause and "Safety pause" in pause,"Pause screen must offer safe exit and temporary bypass")
