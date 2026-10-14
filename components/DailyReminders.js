@@ -2,16 +2,11 @@ import React,{useEffect,useState} from 'react';
 import {Alert,Pressable,Text,View,StyleSheet} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import {changeDailyReminder,cancelAllDailyReminders} from '../lib/reminderScheduler';
 const KEY='@joyvimo/daily-reminder-v1';
 const TIMES=[{hour:8,label:'8 AM'},{hour:13,label:'1 PM'},{hour:18,label:'6 PM'},{hour:21,label:'9 PM'}];
 export async function cancelSavedReminder(){
- const raw=await AsyncStorage.getItem(KEY);
- if(raw){
-  let item;
-  try{item=JSON.parse(raw)}catch{throw new Error('Saved reminder record is unreadable')}
-  if(item.id)await Notifications.cancelScheduledNotificationAsync(item.id)
- }
- await AsyncStorage.removeItem(KEY);
+ await cancelAllDailyReminders({notifications:Notifications,storage:AsyncStorage});
 }
 export default function DailyReminders({age}){
  const [state,setState]=useState({enabled:false,hour:21,id:null});
@@ -21,19 +16,12 @@ export default function DailyReminders({age}){
   if(busy||!loaded)return;
   setBusy(true);
   try{
-   let id=null;
    if(enabled){
     let permission=await Notifications.getPermissionsAsync();
     if(!permission.granted)permission=await Notifications.requestPermissionsAsync();
     if(!permission.granted){Alert.alert('Permission needed','Enable notifications in Android settings to use reminders.');return}
-    id=await Notifications.scheduleNotificationAsync({
-     content:{title:'JOY VIMO',body:'A gentle reminder to take a Joy break or check your daily plan.',sound:false},
-     trigger:{type:Notifications.SchedulableTriggerInputTypes.DAILY,hour,minute:0}
-    });
    }
-   if(state.id)await Notifications.cancelScheduledNotificationAsync(state.id).catch(()=>{});
-   const next={enabled,hour,id};
-   await AsyncStorage.setItem(KEY,JSON.stringify(next));
+   const next=await changeDailyReminder({notifications:Notifications,storage:AsyncStorage,previous:state,hour,enabled});
    setState(next);
   }catch{Alert.alert('Reminder unavailable','Please retry from Settings.')}
   finally{setBusy(false)}
