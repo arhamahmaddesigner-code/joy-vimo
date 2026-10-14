@@ -79,6 +79,11 @@ jobs:
           apksigner=$(find "$sdk/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -1)
           test -x "$apksigner"
           "$apksigner" verify --verbose --print-certs "$apk" | tee private-apk-signature.txt
+          expected=$(keytool -list -v -keystore "$JOY_QA_KEYSTORE_PATH" -alias "$JOY_QA_KEY_ALIAS" -storepass:env JOY_QA_STORE_PASSWORD | grep -m1 'SHA256:' | sed 's/.*SHA256: *//' | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          actual=$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          test -n "$expected"
+          test -n "$actual"
+          test "$expected" = "$actual"
           sha256sum "$apk" | tee private-apk-sha256.txt
           echo "Verified APK signing details and SHA256 are in this run's logs."
       - name: Upload QA APK
