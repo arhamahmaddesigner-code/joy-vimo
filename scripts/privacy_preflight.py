@@ -52,6 +52,11 @@ must("android.permission.BIND_ACCESSIBILITY_SERVICE" in manifest,"Accessibility 
 must("Accessibility" in (root/"components/FocusControl.js").read_text(),"Consent UI must explain Accessibility")
 must("workflow_dispatch:" in workflow and "\n  push:" not in workflow,"APK workflow must stay manual-only")
 must("if: ${{ inputs.publish_private_apk }}" in workflow,"Owner APK artifact must be gated by explicit publish input")
+must('JOY_QA_STORE_PASSWORD: ${{ secrets.JOY_QA_STORE_PASSWORD }}' in workflow and 'JOY_QA_KEY_ALIAS: ${{ secrets.JOY_QA_KEY_ALIAS }}' in workflow,"Stable signing variables must be passed to build and certificate verification")
+build_step=workflow.split('      - name: Build bundled QA APK',1)[-1].split('      - name: Confirm APK generated',1)[0]
+verify_step=workflow.split('      - name: Verify private APK signature and record fingerprint',1)[-1].split('      - name: Upload QA APK',1)[0]
+must('JOY_QA_KEY_PASSWORD:' in build_step and 'JOY_QA_STORE_PASSWORD:' in build_step and 'JOY_QA_KEY_ALIAS:' in build_step,"Gradle build must receive the protected signing secrets")
+must('JOY_QA_STORE_PASSWORD:' in verify_step and 'JOY_QA_KEY_ALIAS:' in verify_step,"APK certificate verification must receive the protected keystore credentials")
 signing=(root/"scripts/ensure_qa_signing.py").read_text()
 must("Stable signing secrets missing" in signing and "JOY_QA_KEYSTORE_BASE64" in signing,"Private APK must fail closed without reusable signing secrets")
 must(app_cfg["expo"]["android"]["package"]=="com.joyvimo.app","QA package ID unexpectedly changed")
