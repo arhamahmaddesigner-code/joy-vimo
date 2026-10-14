@@ -49,6 +49,7 @@ jobs:
           node tests/focusSync.test.cjs
           node tests/localErase.test.cjs
           node tests/reminderScheduler.test.cjs
+          node tests/mobileLayout.test.cjs
           python3 scripts/privacy_preflight.py
       - name: Fast JavaScript and JSX syntax preflight
         run: |
