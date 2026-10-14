@@ -14,7 +14,7 @@ app_cfg=json.loads((root/"app.json").read_text())
 errors=[]
 def must(check,why):
     if not check:errors.append(why)
-must("clearFocusConfig" in module and "clearFocusConfig" in app,"Native focus settings must be wiped on data deletion")
+must("clearFocusConfig" in module and "eraseDeviceData" in app and "clearFocusConfig" in (root/"lib/localErase.js").read_text(),"Native focus settings must be wiped on data deletion")
 must("consented" in module and "consented" in service,"Native enforcement requires recorded opt-in")
 must('age!="kid"' in module and 'getString("age","kid")!="kid"' in service,"Parent-supported mode must fail closed")
 must('android:canRetrieveWindowContent="true"' in config and 'android:accessibilityFlags="flagReportViewIds"' in config,"YouTube screen resource-ID capability must be declared")
