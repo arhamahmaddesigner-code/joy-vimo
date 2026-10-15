@@ -5,7 +5,7 @@ import {mayUseAdultLeaderboard,normalizeLoginEmail,normalizeEmailOtp,secondsUnti
 const V='#6737F5',D='#21134C',M='#706B87';
 export default function AdultLeaderboard({age}){
  const [session,setSession]=useState(null),[email,setEmail]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),
- [country,setCountry]=useState('PK'),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
+ [country,setCountry]=useState('PK'),[otpSentAt,setOtpSentAt]=useState(0),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
  const adult=mayUseAdultLeaderboard(age);
  const adultRef=useRef(adult);
  adultRef.current=adult;
@@ -33,10 +33,11 @@ export default function AdultLeaderboard({age}){
   return()=>auth.subscription.unsubscribe();
  },[adult]);
  useEffect(()=>{if(adult&&session&&member)getRankings().catch(()=>setLoadError('Unable to load rankings.'))},[scope,country,member,session?.user?.id]);
- async function execute(task){setBusy(true);try{await task();await refresh()}catch(e){Alert.alert('Could not complete',e.message||'Try again later')}finally{setBusy(false)}}
- async function signin(){if(!email.includes('@')){Alert.alert('Email required','Enter a valid email to receive a sign-in link.');return;}
-  execute(async()=>{const {error}=await db.auth.signInWithOtp({email:email.trim(),options:{shouldCreateUser:true}});if(error)throw error;Alert.alert('Check your email','Enter the one-time email verification code below. JOY VIMO never asks you to share a password.')})}
- async function verify(){execute(async()=>{const {error}=await db.auth.verifyOtp({email:email.trim(),token:code.trim(),type:'email'});if(error)throw error;setCode('')})}
+ async function execute(task){if(!adultRef.current||busy||!db)return;setBusy(true);try{await task();await refresh()}catch(e){Alert.alert('Could not complete',e.message||'Try again later')}finally{setBusy(false)}}
+ async function signin(){const address=normalizeLoginEmail(email);if(!address){Alert.alert('Valid email required','Enter a valid email to receive a sign-in code.');return;}
+  if(secondsUntilOtpResend(otpSentAt)>0){Alert.alert('Please wait','A verification code was requested recently.');return;}
+  execute(async()=>{const {error}=await db.auth.signInWithOtp({email:address,options:{shouldCreateUser:true}});if(error)throw error;setEmail(address);setOtpSentAt(Date.now());Alert.alert('Check your email','Enter the one-time verification code. Never share it with anyone.')})}
+ async function verify(){const address=normalizeLoginEmail(email),token=normalizeEmailOtp(code);if(!address||!token){Alert.alert('Check your code','Enter your numeric email verification code.');return}execute(async()=>{const {error}=await db.auth.verifyOtp({email:address,token,type:'email'});if(error)throw error;setCode('')})}
  async function rpc(name,args={}){const {error}=await db.rpc(name,args);if(error)throw error}
  if(!adult)return <View style={s.card}><Text style={s.title}>Private mode</Text><Text style={s.description}>Public leaderboards are unavailable for minors. Your positive progress remains on your device.</Text></View>;
  if(!configured)return <View style={s.card}><Text style={s.title}>Community leaderboard is not connected yet</Text><Text style={s.description}>Dedicated JOY VIMO backend configuration is pending. Your private offline challenges continue to work. No data is sent to ORYX Development.</Text></View>;
@@ -48,7 +49,7 @@ export default function AdultLeaderboard({age}){
  {!member?<><TextInput style={s.input} placeholder="Country, e.g. PK" maxLength={2} autoCapitalize="characters" value={country} onChangeText={setCountry}/>
  <Pressable accessibilityRole="button" disabled={busy} onPress={()=>Alert.alert('Adult-only public challenge',
  'Your random alias, country and capped positive-action points will be shown on the leaderboard. Only opt in if you are at least 18. This is not a measure of medical recovery.',
- [{text:'Cancel',style:'cancel'},{text:'I am 18+ and opt in',onPress:()=>execute(()=>rpc('joy_join_leaderboard',{p_country:country.toUpperCase()}))}])} style={s.button}><Text style={s.white}>Join voluntarily</Text></Pressable></>:
+ [{text:'Cancel',style:'cancel'},{text:'I am 18+ and opt in',onPress:()=>{const region=normalizeCountryCode(country);if(!region){Alert.alert('Country required','Enter a valid two-letter country code.');return}execute(()=>rpc('joy_join_leaderboard',{p_country:region}))}}])} style={s.button}><Text style={s.white}>Join voluntarily</Text></Pressable></>:
  <><Text style={s.section}>This week's positive actions</Text>
  <View style={{flexDirection:'row',gap:8,marginTop:13}}>{[['global','Global'],['country','Country']].map(([v,label])=><Pressable key={v} accessibilityRole="button" onPress={()=>setScope(v)} style={[s.secondary,{flex:1,backgroundColor:scope===v?'#6737F5':'#F1EBFC',borderRadius:12,paddingVertical:11}]}><Text style={{color:scope===v?'white':V,fontWeight:'800'}}>{label}</Text></Pressable>)}</View>
  {scope==='country'?<TextInput style={s.input} placeholder="Country code, e.g. PK" maxLength={2} autoCapitalize="characters" value={country} onChangeText={setCountry}/>:null}
