@@ -1,13 +1,16 @@
-import React,{useEffect,useState} from 'react';
+import React,{useEffect,useRef,useState} from 'react';
 import {Alert,Pressable,Text,TextInput,View,StyleSheet,ActivityIndicator} from 'react-native';
 import {configured,joySupabase as db} from '../lib/joySupabase';
+import {mayUseAdultLeaderboard,normalizeLoginEmail,normalizeEmailOtp,secondsUntilOtpResend,normalizeCountryCode} from '../lib/leaderboardAuth';
 const V='#6737F5',D='#21134C',M='#706B87';
 export default function AdultLeaderboard({age}){
  const [session,setSession]=useState(null),[email,setEmail]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),
  [country,setCountry]=useState('PK'),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
- const adult=age==='adult';
+ const adult=mayUseAdultLeaderboard(age);
+ const adultRef=useRef(adult);
+ adultRef.current=adult;
  async function refresh(){
-  if(!db)return;
+  if(!db||!adultRef.current)return;
   const {data:{session:s},error:sessionError}=await db.auth.getSession();if(sessionError)throw sessionError;setSession(s);
   if(s){
    const {data:profile,error:profileError}=await db.from('joy_public_profiles').select('visible').eq('user_id',s.user.id).maybeSingle();
@@ -17,19 +20,19 @@ export default function AdultLeaderboard({age}){
   }else{setRows([]);setMember(false)}
  }
  async function getRankings(which=scope,region=country){
-  if(!db)return;
-  const code=region.trim().toUpperCase();
-  if(which==='country'&&!/^[A-Z]{2}$/.test(code)){setLoadError('Enter a valid two-letter country code.');return;}
+  if(!db||!adultRef.current)return;
+  const code=normalizeCountryCode(region);
+  if(which==='country'&&!code){setLoadError('Enter a valid two-letter country code.');return;}
   const {data,error}=await db.rpc('joy_weekly_leaderboard',{p_country:which==='country'?code:null});
   if(error){setLoadError('Unable to load rankings: '+error.message);setRows([]);return;}
   setLoadError('');setRows(data||[]);
  }
- useEffect(()=>{refresh().catch(()=>setLoadError('Could not load your account.'));if(!db)return;
+ useEffect(()=>{if(!adult){setSession(null);setMember(false);setRows([]);setCode('');setLoadError('');return}refresh().catch(()=>setLoadError('Could not load your account.'));if(!db)return;
   // Supabase auth callbacks must not synchronously await other Supabase calls.
   const {data:auth}=db.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(()=>{}),0)});
   return()=>auth.subscription.unsubscribe();
- },[]);
- useEffect(()=>{if(session&&member)getRankings().catch(()=>setLoadError('Unable to load rankings.'))},[scope,country,member,session?.user?.id]);
+ },[adult]);
+ useEffect(()=>{if(adult&&session&&member)getRankings().catch(()=>setLoadError('Unable to load rankings.'))},[scope,country,member,session?.user?.id]);
  async function execute(task){setBusy(true);try{await task();await refresh()}catch(e){Alert.alert('Could not complete',e.message||'Try again later')}finally{setBusy(false)}}
  async function signin(){if(!email.includes('@')){Alert.alert('Email required','Enter a valid email to receive a sign-in link.');return;}
   execute(async()=>{const {error}=await db.auth.signInWithOtp({email:email.trim(),options:{shouldCreateUser:true}});if(error)throw error;Alert.alert('Check your email','Enter the one-time email verification code below. JOY VIMO never asks you to share a password.')})}
