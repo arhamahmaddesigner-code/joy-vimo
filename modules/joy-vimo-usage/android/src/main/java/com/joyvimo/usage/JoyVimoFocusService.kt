@@ -57,11 +57,12 @@ class JoyVimoFocusService : AccessibilityService() {
   private var enteredAtMs=0L
   // Debounce duplicate openings per package, not across unrelated apps.
   private val lastEntryByPackage=mutableMapOf<String,Long>()
-  private var lastRedirectMs=0L
-  private var lastPauseLaunchMs=0L
-  private var lastScanMs=0L
-  private var lastInstagramScanMs=0L
-  private var lastTiktokScanMs=0L
+  // Only short event throttles use elapsedRealtime; daily rules still use wall time.
+  private var lastRedirectTick=-1L
+  private var lastPauseLaunchTick=-1L
+  private var lastScanTick=-1L
+  private var lastInstagramScanTick=-1L
+  private var lastTiktokScanTick=-1L
   private var activeSessionMs=0L
   private var lastMonotonicTickMs=android.os.SystemClock.elapsedRealtime()
   private var lastTrackedPkg:String?=null
@@ -98,6 +99,7 @@ class JoyVimoFocusService : AccessibilityService() {
     val pkg=e.packageName?.toString()?:return
     if(pkg=="com.android.systemui"||pkg.contains("inputmethod",true)||pkg.contains("keyboard",true))return
     val now=System.currentTimeMillis()
+    val tick=android.os.SystemClock.elapsedRealtime()
     if(kind==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && pkg!=foregroundPkg) {
       foregroundPkg=pkg
       enteredAtMs=now
@@ -108,27 +110,27 @@ class JoyVimoFocusService : AccessibilityService() {
       if(pkg!=packageName)recordOpening(pkg,now)
     }
     if(pkg=="com.android.chrome" && protectionRunning() && prefs.getBoolean("domain_rules_enabled",false)) {
-      if(now-lastScanMs>=900L) {lastScanMs=now;checkChromeDomain()}
+      if(lastScanTick<0L || tick-lastScanTick>=900L) {lastScanTick=tick;checkChromeDomain()}
     }
     if(pkg==instaPackage && protectionRunning() && prefs.getBoolean("instagram_reels",false)) {
-      if(now-lastInstagramScanMs>=900L) {
-        lastInstagramScanMs=now
+      if(lastInstagramScanTick<0L || tick-lastInstagramScanTick>=900L) {
+        lastInstagramScanTick=tick
         if(hasFullscreenPlayerId(pkg,instagramViewerIds)) {
           redirect("Instagram Reels",pkg,"instagram_reels_screen",back=true)
         }
       }
     }
     if(pkg in tiktokPackages && protectionRunning() && prefs.getBoolean("tiktok_feed",false)) {
-      if(now-lastTiktokScanMs>=950L) {
-        lastTiktokScanMs=now
+      if(lastTiktokScanTick<0L || tick-lastTiktokScanTick>=950L) {
+        lastTiktokScanTick=tick
         if(hasFullscreenPlayerId(pkg,tiktokFeedIds)) {
           redirect("TikTok For You",pkg,"tiktok_feed_screen",back=true)
         }
       }
     }
     if(pkg==ytPackage && protectionRunning() && prefs.getBoolean("youtube_shorts",false)) {
-      if(now-lastScanMs>=850L) {
-        lastScanMs=now
+      if(lastScanTick<0L || tick-lastScanTick>=850L) {
+        lastScanTick=tick
         if(isShortsPlayerVisible()) redirect("YouTube Shorts",pkg,"shorts_screen",back=true)
       }
     }
@@ -144,9 +146,10 @@ class JoyVimoFocusService : AccessibilityService() {
     if(now<prefs.getLong("opening_bypass_until_"+pkg,0L))return
     val rule=getRule(name)?:return
     if(!rule.optBoolean("enabled",false))return
-    val lastPackageEntry=lastEntryByPackage[pkg]?:0L
-    if(now-lastPackageEntry<500L)return
-    lastEntryByPackage[pkg]=now
+    val entryTick=android.os.SystemClock.elapsedRealtime()
+    val lastPackageEntry=lastEntryByPackage[pkg]
+    if(lastPackageEntry!=null && entryTick-lastPackageEntry in 0L..499L)return
+    lastEntryByPackage[pkg]=entryTick
     val day=dayKey()
     // A voluntarily configured 3-denial cooldown, scoped to this app and day.
     // Safety pause, disabling Focus Shield and Android permission revocation win.
@@ -174,8 +177,9 @@ class JoyVimoFocusService : AccessibilityService() {
       return
     }
     val delay=rule.optInt("delay",0).coerceIn(0,30)
-    if(delay>0 && now-lastPauseLaunchMs>2500L){
-      lastPauseLaunchMs=now
+    val pauseTick=android.os.SystemClock.elapsedRealtime()
+    if(delay>0 && (lastPauseLaunchTick<0L || pauseTick-lastPauseLaunchTick>2500L)){
+      lastPauseLaunchTick=pauseTick
       prefs.edit().putLong("opening_bypass_until_"+pkg,now+3000L).apply()
       try {
         val screen=Intent(this,JoyVimoOpeningPauseActivity::class.java).apply {
@@ -359,8 +363,9 @@ class JoyVimoFocusService : AccessibilityService() {
   private fun redirect(name:String,pkg:String,reason:String,back:Boolean=false) {
     if(!protectionRunning())return
     val now=System.currentTimeMillis()
-    if(now-lastRedirectMs<3000L)return
-    lastRedirectMs=now
+    val redirectTick=android.os.SystemClock.elapsedRealtime()
+    if(lastRedirectTick>=0L && redirectTick-lastRedirectTick in 0L..2999L)return
+    lastRedirectTick=redirectTick
     prefs.edit()
       .putString("last_blocked",name)
       .putString("last_reason",reason)
