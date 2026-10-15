@@ -1,1 +1,2 @@
 Run parallel pre-APK QA lanes alongside existing Android compilation. Each lane checks the same source snapshot; no APK upload or release. 2026-10-16.
+Recheck Expo SDK 57 dependency alignment after pinning four packages, with independent parallel lanes. No APK upload. 2026-10-16.
