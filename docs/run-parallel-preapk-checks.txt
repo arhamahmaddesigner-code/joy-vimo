@@ -2,3 +2,4 @@ Run parallel pre-APK QA lanes alongside existing Android compilation. Each lane 
 Recheck Expo SDK 57 dependency alignment after pinning four packages, with independent parallel lanes. No APK upload. 2026-10-16.
 Recheck expo-linear-gradient SDK 57 compatibility after pinning ~57.0.2; no APK upload. 2026-10-16.
 Check stale leaderboard async response guards, auth listener cleanup and latest Expo dependencies in parallel source QA. No Android APK run. 2026-10-16.
+Validate static adult leaderboard migration contracts for RLS, RPC grants, owner-scoped data and adult opt-in. Live backend permissions pending. 2026-10-16.
