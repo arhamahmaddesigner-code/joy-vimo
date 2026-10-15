@@ -53,6 +53,7 @@ jobs:
           node tests/reminderScheduler.test.cjs
           node tests/mobileLayout.test.cjs
           node tests/qaVersion.test.cjs
+          node tests/leaderboardAuth.test.cjs
       - name: Run privacy & release preflight
         run: python3 scripts/privacy_preflight.py
       - name: Fast JavaScript and JSX syntax preflight
