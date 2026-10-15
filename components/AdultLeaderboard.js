@@ -8,29 +8,51 @@ export default function AdultLeaderboard({age}){
  [country,setCountry]=useState('PK'),[otpSentAt,setOtpSentAt]=useState(0),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
  const adult=mayUseAdultLeaderboard(age);
  const adultRef=useRef(adult);
+ const refreshEpoch=useRef(0),rankEpoch=useRef(0),previousAge=useRef(age);
+ if(previousAge.current!==age){previousAge.current=age;refreshEpoch.current++;rankEpoch.current++}
  adultRef.current=adult;
  async function refresh(){
   if(!db||!adultRef.current)return;
-  const {data:{session:s},error:sessionError}=await db.auth.getSession();if(sessionError)throw sessionError;setSession(s);
+  const request=++refreshEpoch.current;
+  const valid=()=>adultRef.current&&refreshEpoch.current===request;
+  const {data:{session:s},error:sessionError}=await db.auth.getSession();
+  if(!valid())return;
+  if(sessionError)throw sessionError;
+  setSession(s);
   if(s){
    const {data:profile,error:profileError}=await db.from('joy_public_profiles').select('visible').eq('user_id',s.user.id).maybeSingle();
+   if(!valid())return;
    if(profileError)throw profileError;
    setMember(!!profile?.visible);
-   if(profile?.visible)await getRankings();else{setRows([]);setLoadError('');}
-  }else{setRows([]);setMember(false)}
+   if(profile?.visible)await getRankings();
+   else{rankEpoch.current++;setRows([]);setLoadError('');}
+  }else{rankEpoch.current++;setRows([]);setMember(false);setLoadError('')}
  }
  async function getRankings(which=scope,region=country){
   if(!db||!adultRef.current)return;
+  const request=++rankEpoch.current;
   const code=normalizeCountryCode(region);
-  if(which==='country'&&!code){setLoadError('Enter a valid two-letter country code.');return;}
+  if(which==='country'&&!code){setRows([]);setLoadError('Enter a valid two-letter country code.');return;}
   const {data,error}=await db.rpc('joy_weekly_leaderboard',{p_country:which==='country'?code:null});
+  if(!adultRef.current||rankEpoch.current!==request)return;
   if(error){setLoadError('Unable to load rankings: '+error.message);setRows([]);return;}
   setLoadError('');setRows(data||[]);
  }
- useEffect(()=>{if(!adult){setSession(null);setMember(false);setRows([]);setCode('');setLoadError('');return}refresh().catch(()=>setLoadError('Could not load your account.'));if(!db)return;
-  // Supabase auth callbacks must not synchronously await other Supabase calls.
-  const {data:auth}=db.auth.onAuthStateChange(()=>{setTimeout(()=>refresh().catch(()=>{}),0)});
-  return()=>auth.subscription.unsubscribe();
+ useEffect(()=>{
+  if(!adult){refreshEpoch.current++;rankEpoch.current++;setSession(null);setMember(false);setRows([]);setCode('');setLoadError('');return}
+  let active=true;
+  refresh().catch(()=>{if(active&&adultRef.current)setLoadError('Could not load your account.')});
+  if(!db)return()=>{active=false;refreshEpoch.current++;rankEpoch.current++};
+  // Do not make synchronous Supabase calls within the auth event callback.
+  const pending=new Set();
+  const {data:auth}=db.auth.onAuthStateChange(()=>{
+   const task=setTimeout(()=>{
+    pending.delete(task);
+    if(active&&adultRef.current)refresh().catch(()=>{if(active&&adultRef.current)setLoadError('Could not refresh your account.')});
+   },0);
+   pending.add(task);
+  });
+  return()=>{active=false;for(const task of pending)clearTimeout(task);auth.subscription.unsubscribe();refreshEpoch.current++;rankEpoch.current++};
  },[adult]);
  useEffect(()=>{if(adult&&session&&member)getRankings().catch(()=>setLoadError('Unable to load rankings.'))},[scope,country,member,session?.user?.id]);
  async function execute(task){if(!adultRef.current||busy||!db)return;setBusy(true);try{await task();await refresh()}catch(e){Alert.alert('Could not complete',e.message||'Try again later')}finally{setBusy(false)}}
