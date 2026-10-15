@@ -30,3 +30,4 @@ Verify profile save serialization, privacy erasure barrier, no data resurrection
 Verify Focus Shield lock-screen-safe opening counts and per-app debounce in integrated Android CI. Private internal build only; no APK upload. 2026-10-15.
 Revalidate centralized Focus Shield safety pause/consent and locked-screen preflight after Build 31 obsolete assertion; private Android compilation only, no APK upload. 2026-10-15.
 Verify monotonic time for accessibility event debounce, redirect, feed scans, and pause throttle; full Android CI, no APK upload. 2026-10-15.
+Verify adult-only leaderboard session safety, email OTP input validation, resend cooldown and automated tests. Internal Android compile only; no APK upload. 2026-10-16.
