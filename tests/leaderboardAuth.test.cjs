@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const {mayUseAdultLeaderboard,normalizeLoginEmail,normalizeEmailOtp,secondsUntilOtpResend,normalizeCountryCode}=require('../lib/leaderboardAuth');
+assert.equal(mayUseAdultLeaderboard('adult'),true);
+assert.equal(mayUseAdultLeaderboard('teen'),false);
+assert.equal(mayUseAdultLeaderboard('kid'),false);
+assert.equal(normalizeLoginEmail(' TEST@Example.com '),'test@example.com');
+assert.equal(normalizeLoginEmail('invalid'),null);
+assert.equal(normalizeEmailOtp('123456'),'123456');
+assert.equal(normalizeEmailOtp('12345'),null);
+assert.equal(normalizeEmailOtp('a23456'),null);
+assert.equal(normalizeCountryCode(' pk '),'PK');
+assert.equal(normalizeCountryCode('P1'),null);
+assert.equal(secondsUntilOtpResend(1000,30000),31);
+assert.equal(secondsUntilOtpResend(1000,62000),0);
+console.log('PASS: adult leaderboard email, OTP, resend and country checks');
