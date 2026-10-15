@@ -1,0 +1,64 @@
+name: JOY VIMO Parallel Pre-APK QA
+
+# Run independent source checks concurrently without packaging or distributing APKs.
+# Deliberately separate from joy-vimo-private-ci so an existing Android build
+# may continue while these jobs validate the same complete repository snapshot.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'docs/run-parallel-preapk-checks.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: joy-vimo-preapk-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  independent-checks:
+    name: ${{ matrix.lane }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        lane: [unit-tests, privacy-audit, jsx-and-assets, expo-dependency-check]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Run selected independent check
+        env:
+          LANE: ${{ matrix.lane }}
+          CI: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$LANE" in
+            unit-tests)
+              for test_file in tests/*.test.cjs; do
+                node "$test_file"
+              done
+              ;;
+            privacy-audit)
+              python3 scripts/privacy_preflight.py
+              ;;
+            jsx-and-assets)
+              npm install --no-audit --no-fund
+              node -e "const fs=require('fs');const parser=require('@babel/parser');const files=['App.js',...fs.readdirSync('components').filter(x=>x.endsWith('.js')).map(x=>'components/'+x),...fs.readdirSync('lib').filter(x=>x.endsWith('.js')).map(x=>'lib/'+x)];for(const file of files)parser.parse(fs.readFileSync(file,'utf8'),{sourceType:'module',plugins:['jsx']});console.log('PASS: source JavaScript/JSX parsing');"
+              npm run assets
+              ;;
+            expo-dependency-check)
+              npm install --no-audit --no-fund
+              npx expo install --check
+              ;;
+            *)
+              echo "Unknown QA lane: $LANE" >&2
+              exit 2
+              ;;
+          esac
