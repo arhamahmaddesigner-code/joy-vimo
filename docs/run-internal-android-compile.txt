@@ -32,3 +32,4 @@ Revalidate centralized Focus Shield safety pause/consent and locked-screen prefl
 Verify monotonic time for accessibility event debounce, redirect, feed scans, and pause throttle; full Android CI, no APK upload. 2026-10-15.
 Verify adult-only leaderboard session safety, email OTP input validation, resend cooldown and automated tests. Internal Android compile only; no APK upload. 2026-10-16.
 Fix Build #34 outdated adult-only privacy preflight to validate centralized helper and action guards; run full Android compile without APK artifact. 2026-10-16.
+Sequential full Android Build #36: verify Feed private feedback persistence, backend contracts, refreshed privacy gates and latest integrated code. No APK artifact upload. 2026-10-16.
