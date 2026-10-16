@@ -3,15 +3,53 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {ACTIVITIES} from '../lib/offlineActivities';
+import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
+const KNOWN_IDS=ACTIVITIES.map(item=>item.id);
 export default function OfflineActivities({interests,onInterestsChange,claims,onComplete}){
  const [current,setCurrent]=useState(null);
  const [step,setStep]=useState(0);
  const [hidden,setHidden]=useState([]);
- useEffect(()=>{let live=true;AsyncStorage.getItem('@joyvimo/joy-feed-hidden-v1').then(raw=>{if(live&&raw){try{const a=JSON.parse(raw);if(Array.isArray(a))setHidden(a.filter(x=>typeof x==='string'))}catch{}}}).catch(()=>{});return()=>{live=false}},[]);
- function hide(id){const next=[...new Set([...hidden,id])];setHidden(next);AsyncStorage.setItem('@joyvimo/joy-feed-hidden-v1',JSON.stringify(next)).catch(()=>{})}
- function restore(){setHidden([]);AsyncStorage.removeItem('@joyvimo/joy-feed-hidden-v1').catch(()=>{})}
+ const [reports,setReports]=useState({});
+ useEffect(()=>{
+  let live=true;
+  AsyncStorage.multiGet([HIDDEN_KEY,REPORTS_KEY]).then(rows=>{
+   if(!live)return;
+   try{setHidden(normalizeHidden(JSON.parse(rows[0][1]||'[]'),KNOWN_IDS))}catch{setHidden([])}
+   try{setReports(normalizeReports(JSON.parse(rows[1][1]||'{}'),KNOWN_IDS))}catch{setReports({})}
+  }).catch(()=>{if(live)Alert.alert('Feed settings unavailable','Saved preferences could not be loaded. Try reopening Joy Feed.')});
+  return()=>{live=false};
+ },[]);
+ async function hide(id){
+  if(!KNOWN_IDS.includes(id))return;
+  const next=normalizeHidden([...hidden,id],KNOWN_IDS);
+  try{await AsyncStorage.setItem(HIDDEN_KEY,JSON.stringify(next));setHidden(next)}
+  catch{Alert.alert('Could not save','Your activity preference was not saved. Please try again.')}
+ }
+ async function restore(){
+  try{await AsyncStorage.removeItem(HIDDEN_KEY);setHidden([])}
+  catch{Alert.alert('Could not restore','Please try again.')}
+ }
+ async function saveLocalFlag(id,reason){
+  try{
+   const nextReports=flagActivity(reports,id,reason,KNOWN_IDS);
+   const nextHidden=normalizeHidden([...hidden,id],KNOWN_IDS);
+   await AsyncStorage.multiSet([[REPORTS_KEY,JSON.stringify(nextReports)],[HIDDEN_KEY,JSON.stringify(nextHidden)]]);
+   setReports(nextReports);setHidden(nextHidden);
+   Alert.alert('Saved privately','This activity has been hidden and your feedback saved on this device only. It was NOT submitted to a moderation team.');
+  }catch{Alert.alert('Could not save feedback','Please try again. No online report was submitted.')}
+ }
+ function flag(id){
+  Alert.alert('Flag this activity on my device','Choose a reason. This is private, local feedback only—not a report sent to moderators.',[
+   ...Object.entries(REASONS).map(([reason,label])=>({text:label,onPress:()=>saveLocalFlag(id,reason)})),
+   {text:'Cancel',style:'cancel'}
+  ]);
+ }
+ async function clearFlags(){
+  try{await AsyncStorage.removeItem(REPORTS_KEY);setReports({})}
+  catch{Alert.alert('Could not clear','Please try again.')}
+ }
  const activities=ACTIVITIES.filter(x=>interests.includes(x.topic)&&!hidden.includes(x.id));
  const today=new Date(),key=[today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
  // Stable daily pick from the finite, user-selected activity pool. No tracking or recommendation service.
@@ -46,11 +84,13 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
        <Text style={s.title}>{item.title}</Text>
        <Text style={s.detail}>{item.body}</Text>
        <Pressable accessibilityRole="button" onPress={()=>startActivity(item)} style={s.primary}><Text style={s.white}>{completed?'Enjoy again':'Start activity · +10 XP'}</Text></Pressable>
-       <Pressable accessibilityRole="button" onPress={()=>hide(item.id)} style={s.secondary}><Text style={s.secondaryText}>Not interested</Text></Pressable>
+       <Pressable accessibilityRole="button" onPress={()=>hide(item.id)} style={s.secondary}><Text style={s.secondaryText}>Not interested · hide this</Text></Pressable>
+       <Pressable accessibilityRole="button" onPress={()=>flag(item.id)} style={s.secondary}><Text style={s.secondaryText}>Flag privately · hide and save reason</Text></Pressable>
       </View>;
    })}
    {!current&&activities.length===0?<View style={s.card}><Text style={s.title}>Choose something that feels right</Text><Text style={s.detail}>Select a topic above or restore hidden activities.</Text></View>:null}
    {!current&&hidden.length>0?<Pressable accessibilityRole="button" onPress={restore} style={s.secondary}><Text style={s.secondaryText}>Restore hidden activities</Text></Pressable>:null}
+   {!current&&Object.keys(reports).length>0?<View style={s.card}><Text style={s.detail}>{Object.keys(reports).length} private feedback flag(s) stored only on your device. No report was sent online.</Text><Pressable accessibilityRole="button" onPress={clearFlags} style={s.secondary}><Text style={s.secondaryText}>Clear my local feedback flags</Text></Pressable></View>:null}
    <Text style={[s.detail,{marginVertical:16,fontSize:12}]}>Activity completion is self-reported. It is not a medical recovery score and does not monitor what you do in other apps.</Text>
  </View>;
 }
