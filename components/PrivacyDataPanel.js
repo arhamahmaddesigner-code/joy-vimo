@@ -1,7 +1,7 @@
 import React,{useState} from 'react';
 import {Alert,Pressable,Share,StyleSheet,Text,View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const KEYS=['@joyvimo/v07','@joyvimo/private-coach-v1','@joyvimo/joy-feed-hidden-v1','@joyvimo/daily-reminder-v1'];
+const KEYS=['@joyvimo/v07','@joyvimo/private-coach-v1','@joyvimo/joy-feed-hidden-v1','@joyvimo/joy-feed-reports-v1','@joyvimo/daily-reminder-v1'];
 export default function PrivacyDataPanel(){
  const [busy,setBusy]=useState(false);
  async function exportLocal(includeDomains=false){
