@@ -12,6 +12,7 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
  const [step,setStep]=useState(0);
  const [hidden,setHidden]=useState([]);
  const [reports,setReports]=useState({});
+ const [flaggingId,setFlaggingId]=useState(null);
  useEffect(()=>{
   let live=true;
   AsyncStorage.multiGet([HIDDEN_KEY,REPORTS_KEY]).then(rows=>{
@@ -41,10 +42,8 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
   }catch{Alert.alert('Could not save feedback','Please try again. No online report was submitted.')}
  }
  function flag(id){
-  Alert.alert('Flag this activity on my device','Choose a reason. This is private, local feedback only—not a report sent to moderators.',[
-   ...Object.entries(REASONS).map(([reason,label])=>({text:label,onPress:()=>saveLocalFlag(id,reason)})),
-   {text:'Cancel',style:'cancel'}
-  ]);
+  if(!KNOWN_IDS.includes(id))return;
+  setFlaggingId(current=>current===id?null:id);
  }
  async function clearFlags(){
   try{await AsyncStorage.removeItem(REPORTS_KEY);setReports({})}
@@ -84,8 +83,14 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
        <Text style={s.title}>{item.title}</Text>
        <Text style={s.detail}>{item.body}</Text>
        <Pressable accessibilityRole="button" onPress={()=>startActivity(item)} style={s.primary}><Text style={s.white}>{completed?'Enjoy again':'Start activity · +10 XP'}</Text></Pressable>
-       <Pressable accessibilityRole="button" onPress={()=>hide(item.id)} style={s.secondary}><Text style={s.secondaryText}>Not interested · hide this</Text></Pressable>
-       <Pressable accessibilityRole="button" onPress={()=>flag(item.id)} style={s.secondary}><Text style={s.secondaryText}>Flag privately · hide and save reason</Text></Pressable>
+       <Pressable accessibilityRole="button" onPress={()=>{setFlaggingId(null);hide(item.id)}} style={s.secondary}><Text style={s.secondaryText}>Not interested · hide this</Text></Pressable>
+       <Pressable accessibilityRole="button" accessibilityState={{expanded:flaggingId===item.id}} onPress={()=>flag(item.id)} style={s.secondary}><Text style={s.secondaryText}>{flaggingId===item.id?'Close private feedback':'Flag privately · hide and save reason'}</Text></Pressable>
+       {flaggingId===item.id?<View style={s.feedbackPanel} accessibilityLabel="Local private activity feedback options">
+        <Text style={s.feedbackTitle}>Why hide this activity?</Text>
+        <Text style={s.feedbackDetail}>Choose a reason. Your feedback stays on this device; it is not sent to moderators.</Text>
+        {Object.entries(REASONS).map(([reason,label])=><Pressable key={reason} accessibilityRole="button" accessibilityLabel={label} style={s.reasonButton} onPress={()=>{setFlaggingId(null);saveLocalFlag(item.id,reason)}}><Text style={s.reasonText}>{label}</Text></Pressable>)}
+        <Pressable accessibilityRole="button" accessibilityLabel="Cancel private activity feedback" style={s.secondary} onPress={()=>setFlaggingId(null)}><Text style={s.secondaryText}>Cancel</Text></Pressable>
+       </View>:null}
       </View>;
    })}
    {!current&&activities.length===0?<View style={s.card}><Text style={s.title}>Choose something that feels right</Text><Text style={s.detail}>Select a topic above or restore hidden activities.</Text></View>:null}
@@ -94,4 +99,4 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
    <Text style={[s.detail,{marginVertical:16,fontSize:12}]}>Activity completion is self-reported. It is not a medical recovery score and does not monitor what you do in other apps.</Text>
  </View>;
 }
-const s=StyleSheet.create({pickCard:{backgroundColor:'#EEE8FF',padding:18,marginTop:14,borderRadius:21,borderWidth:1,borderColor:'#DED1FF'},pickEyebrow:{color:PURPLE,fontSize:11,fontWeight:'800',letterSpacing:1},pickTitle:{fontSize:20,color:INK,fontWeight:'800',marginTop:10},pickDetail:{fontSize:13,color:MUTED,lineHeight:20,marginTop:7},pickButton:{backgroundColor:PURPLE,minHeight:47,borderRadius:13,alignItems:'center',justifyContent:'center',marginTop:13},heading:{fontSize:23,color:INK,fontWeight:'800',marginTop:12},detail:{fontSize:14,lineHeight:21,color:MUTED,marginTop:7},topics:{flexDirection:'row',flexWrap:'wrap',gap:8,marginVertical:12},topic:{minHeight:44,justifyContent:'center',paddingVertical:10,paddingHorizontal:12,borderRadius:18,backgroundColor:'#E9E4F7'},card:{backgroundColor:'#fff',padding:17,marginTop:13,borderRadius:20},art:{height:145,borderRadius:15,alignItems:'center',justifyContent:'center'},emoji:{fontSize:54,textAlign:'center'},eyebrow:{marginTop:12,fontSize:11,color:PURPLE,fontWeight:'800'},title:{fontSize:19,fontWeight:'800',color:INK,marginTop:9},focus:{backgroundColor:'#F3EFFF',borderRadius:14,padding:16,marginTop:16},small:{color:PURPLE,fontSize:11,fontWeight:'800'},instruction:{fontSize:17,lineHeight:25,color:INK,fontWeight:'700',marginTop:8},primary:{backgroundColor:PURPLE,minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',marginTop:14},white:{color:'#fff',fontWeight:'800'},secondary:{minHeight:48,alignItems:'center',justifyContent:'center',marginTop:4},secondaryText:{color:PURPLE,fontWeight:'700'}});
+const s=StyleSheet.create({pickCard:{backgroundColor:'#EEE8FF',padding:18,marginTop:14,borderRadius:21,borderWidth:1,borderColor:'#DED1FF'},pickEyebrow:{color:PURPLE,fontSize:11,fontWeight:'800',letterSpacing:1},pickTitle:{fontSize:20,color:INK,fontWeight:'800',marginTop:10},pickDetail:{fontSize:13,color:MUTED,lineHeight:20,marginTop:7},pickButton:{backgroundColor:PURPLE,minHeight:47,borderRadius:13,alignItems:'center',justifyContent:'center',marginTop:13},heading:{fontSize:23,color:INK,fontWeight:'800',marginTop:12},detail:{fontSize:14,lineHeight:21,color:MUTED,marginTop:7},topics:{flexDirection:'row',flexWrap:'wrap',gap:8,marginVertical:12},topic:{minHeight:44,justifyContent:'center',paddingVertical:10,paddingHorizontal:12,borderRadius:18,backgroundColor:'#E9E4F7'},card:{backgroundColor:'#fff',padding:17,marginTop:13,borderRadius:20},art:{height:145,borderRadius:15,alignItems:'center',justifyContent:'center'},emoji:{fontSize:54,textAlign:'center'},eyebrow:{marginTop:12,fontSize:11,color:PURPLE,fontWeight:'800'},title:{fontSize:19,fontWeight:'800',color:INK,marginTop:9},focus:{backgroundColor:'#F3EFFF',borderRadius:14,padding:16,marginTop:16},small:{color:PURPLE,fontSize:11,fontWeight:'800'},instruction:{fontSize:17,lineHeight:25,color:INK,fontWeight:'700',marginTop:8},primary:{backgroundColor:PURPLE,minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',marginTop:14},white:{color:'#fff',fontWeight:'800'},secondary:{minHeight:48,alignItems:'center',justifyContent:'center',marginTop:4},secondaryText:{color:PURPLE,fontWeight:'700'},feedbackPanel:{backgroundColor:'#F3EFFF',borderRadius:14,padding:14,marginTop:8},feedbackTitle:{fontSize:16,color:INK,fontWeight:'800'},feedbackDetail:{fontSize:12,lineHeight:19,color:MUTED,marginTop:6},reasonButton:{backgroundColor:'#fff',borderRadius:12,minHeight:48,padding:12,justifyContent:'center',marginTop:8,borderWidth:1,borderColor:'#DED1FF'},reasonText:{color:INK,fontWeight:'700',fontSize:13}});
