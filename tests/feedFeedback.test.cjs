@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {REPORTS_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity}=require('../lib/feedFeedback');
+const ids=['nature','calm'];
+assert.equal(REPORTS_KEY,'@joyvimo/joy-feed-reports-v1');
+assert.equal(Object.keys(REASONS).length,3);
+assert.deepEqual(normalizeHidden(['nature','nature','unknown'],ids),['nature']);
+assert.deepEqual(normalizeReports({nature:'uncomfortable',unknown:'irrelevant',calm:'invalid'},ids),{nature:'uncomfortable'});
+assert.deepEqual(flagActivity({},'calm','irrelevant',ids),{calm:'irrelevant'});
+assert.throws(()=>flagActivity({},'missing','irrelevant',ids));
+assert.throws(()=>flagActivity({},'calm','invalid',ids));
+console.log('PASS: local-only Joy Feed feedback with bounded validated IDs/reasons');
