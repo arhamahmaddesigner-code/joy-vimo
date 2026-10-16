@@ -53,6 +53,8 @@ jobs:
           node tests/mobileLayout.test.cjs
           node tests/qaVersion.test.cjs
           node tests/leaderboardAuth.test.cjs
+          node tests/leaderboardMigration.test.cjs
+          node tests/feedFeedback.test.cjs
           python3 scripts/privacy_preflight.py
       - name: Fast JavaScript and JSX syntax preflight
         run: |
