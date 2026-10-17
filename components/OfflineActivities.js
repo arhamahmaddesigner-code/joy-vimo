@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {ACTIVITIES} from '../lib/offlineActivities';
+import MemoryGarden from './MemoryGarden';
 import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
@@ -13,6 +14,7 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
  const [hidden,setHidden]=useState([]);
  const [reports,setReports]=useState({});
  const [flaggingId,setFlaggingId]=useState(null);
+ const [showMemoryGarden,setShowMemoryGarden]=useState(false);
  useEffect(()=>{
   let live=true;
   AsyncStorage.multiGet([HIDDEN_KEY,REPORTS_KEY]).then(rows=>{
@@ -57,7 +59,9 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
  function startActivity(item){setCurrent(item);setStep(0)}
  return <View>
   <Text style={s.heading}>Joy breaks, not infinite scrolling</Text>
-  <Text style={s.detail}>Six finite, screen-light activities. No ads, autoplay, login, uploads, algorithmic feed or tracking.</Text>
+  <Text style={s.detail}>Six guided offline activities and one finite memory mini-game. No ads, autoplay, login, uploads, algorithmic feed or tracking.</Text>
+  <Pressable accessibilityRole="button" accessibilityState={{expanded:showMemoryGarden}} onPress={()=>setShowMemoryGarden(x=>!x)} style={s.pickButton}><Text style={s.white}>{showMemoryGarden?'Close Memory Garden':'Play Memory Garden · offline mini-game'}</Text></Pressable>
+  {showMemoryGarden?<MemoryGarden onComplete={onComplete}/>:null}
   {!current&&dailyPick?<View style={s.pickCard}><Text style={s.pickEyebrow}>✦ TODAY\'S JOY PICK</Text><Text style={s.pickTitle}>{dailyPick.emoji}  {dailyPick.title}</Text><Text style={s.pickDetail}>A single optional activity chosen from your selected interests. No endless recommendations.</Text><Pressable accessibilityRole="button" accessibilityLabel="Try today\'s Joy Pick" onPress={()=>startActivity(dailyPick)} style={s.pickButton}><Text style={s.white}>Try today\'s pick →</Text></Pressable></View>:null}
   <View style={s.topics}>{TOPICS.map(t=><Pressable key={t} accessibilityRole="button" accessibilityState={{selected:interests.includes(t)}} onPress={()=>onInterestsChange(interests.includes(t)?interests.filter(x=>x!==t):[...interests,t])} style={[s.topic,interests.includes(t)&&{backgroundColor:PURPLE}]}>
    <Text style={{color:interests.includes(t)?'#fff':INK,fontWeight:'700',fontSize:12}}>{t}</Text>
