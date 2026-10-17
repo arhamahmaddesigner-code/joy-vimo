@@ -1,12 +1,14 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {Alert,Pressable,Text,TextInput,View,StyleSheet,ActivityIndicator} from 'react-native';
 import {configured,joySupabase as db} from '../lib/joySupabase';
-import {mayUseAdultLeaderboard,normalizeLoginEmail,normalizeEmailOtp,secondsUntilOtpResend,normalizeCountryCode} from '../lib/leaderboardAuth';
+import {mayUseAdultLeaderboard,normalizeLoginEmail,normalizeEmailOtp,secondsUntilOtpResend,normalizeCountryCode,otpCodeBelongsToEmail} from '../lib/leaderboardAuth';
 const V='#6737F5',D='#21134C',M='#706B87';
 export default function AdultLeaderboard({age}){
  const [session,setSession]=useState(null),[email,setEmail]=useState(''),[code,setCode]=useState(''),[busy,setBusy]=useState(false),
- [country,setCountry]=useState('PK'),[otpSentAt,setOtpSentAt]=useState(0),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
+ [country,setCountry]=useState('PK'),[otpSentAt,setOtpSentAt]=useState(0),[codeSentEmail,setCodeSentEmail]=useState(''),[otpNow,setOtpNow]=useState(Date.now()),[scope,setScope]=useState('global'),[rows,setRows]=useState([]),[member,setMember]=useState(false),[loadError,setLoadError]=useState('');
  const adult=mayUseAdultLeaderboard(age);
+ const resendRemaining=secondsUntilOtpResend(otpSentAt,otpNow);
+ useEffect(()=>{if(!adult||resendRemaining<=0)return;const timer=setInterval(()=>setOtpNow(Date.now()),1000);return()=>clearInterval(timer)},[adult,otpSentAt,resendRemaining>0]);
  const adultRef=useRef(adult);
  const refreshEpoch=useRef(0),rankEpoch=useRef(0),previousAge=useRef(age);
  if(previousAge.current!==age){previousAge.current=age;refreshEpoch.current++;rankEpoch.current++}
@@ -39,7 +41,7 @@ export default function AdultLeaderboard({age}){
   setLoadError('');setRows(data||[]);
  }
  useEffect(()=>{
-  if(!adult){refreshEpoch.current++;rankEpoch.current++;setSession(null);setMember(false);setRows([]);setCode('');setLoadError('');return}
+  if(!adult){refreshEpoch.current++;rankEpoch.current++;setSession(null);setMember(false);setRows([]);setCode('');setCodeSentEmail('');setOtpSentAt(0);setLoadError('');return}
   let active=true;
   refresh().catch(()=>{if(active&&adultRef.current)setLoadError('Could not load your account.')});
   if(!db)return()=>{active=false;refreshEpoch.current++;rankEpoch.current++};
@@ -58,15 +60,15 @@ export default function AdultLeaderboard({age}){
  async function execute(task){if(!adultRef.current||busy||!db)return;setBusy(true);try{await task();await refresh()}catch(e){Alert.alert('Could not complete',e.message||'Try again later')}finally{setBusy(false)}}
  async function signin(){const address=normalizeLoginEmail(email);if(!address){Alert.alert('Valid email required','Enter a valid email to receive a sign-in code.');return;}
   if(secondsUntilOtpResend(otpSentAt)>0){Alert.alert('Please wait','A verification code was requested recently.');return;}
-  execute(async()=>{const {error}=await db.auth.signInWithOtp({email:address,options:{shouldCreateUser:true}});if(error)throw error;setEmail(address);setOtpSentAt(Date.now());Alert.alert('Check your email','Enter the one-time verification code. Never share it with anyone.')})}
- async function verify(){const address=normalizeLoginEmail(email),token=normalizeEmailOtp(code);if(!address||!token){Alert.alert('Check your code','Enter your numeric email verification code.');return}execute(async()=>{const {error}=await db.auth.verifyOtp({email:address,token,type:'email'});if(error)throw error;setCode('')})}
+  execute(async()=>{const {error}=await db.auth.signInWithOtp({email:address,options:{shouldCreateUser:true}});if(error)throw error;setEmail(address);setCode('');setCodeSentEmail(address);setOtpNow(Date.now());setOtpSentAt(Date.now());Alert.alert('Check your email','Enter the one-time verification code. Never share it with anyone.')})}
+ async function verify(){const address=normalizeLoginEmail(email),token=normalizeEmailOtp(code);if(!address||!token){Alert.alert('Check your code','Enter your numeric email verification code.');return}if(!otpCodeBelongsToEmail(address,codeSentEmail)){Alert.alert('Email mismatch','Request a fresh code for this email address first.');return}execute(async()=>{const {error}=await db.auth.verifyOtp({email:address,token,type:'email'});if(error)throw error;setCode('')})}
  async function rpc(name,args={}){const {error}=await db.rpc(name,args);if(error)throw error}
  if(!adult)return <View style={s.card}><Text style={s.title}>Private mode</Text><Text style={s.description}>Public leaderboards are unavailable for minors. Your positive progress remains on your device.</Text></View>;
  if(!configured)return <View style={s.card}><Text style={s.title}>Community leaderboard is not connected yet</Text><Text style={s.description}>Dedicated JOY VIMO backend configuration is pending. Your private offline challenges continue to work. No data is sent to ORYX Development.</Text></View>;
  return <View style={s.card}>
  <Text style={s.title}>Opt-in positive-action leaderboard</Text><Text style={s.description}>Adults only. Shares a random alias, optional country and capped positive-action scores. Never shares pornography history, screen contents or sensitive struggles. Scores are self-reported, not proof of recovery.</Text>
- {!session?<><TextInput style={s.input} placeholder="Email address" accessibilityLabel="Email login address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail}/>
- <Pressable accessibilityRole="button" disabled={busy} onPress={signin} style={s.button}><Text style={s.white}>Email me a login code</Text></Pressable><TextInput style={s.input} placeholder="Email verification code" keyboardType="number-pad" autoCapitalize="none" value={code} onChangeText={setCode}/><Pressable accessibilityRole="button" disabled={busy||!code.trim()} onPress={verify} style={s.button}><Text style={s.white}>Verify email code</Text></Pressable></>:
+ {!session?<><TextInput style={s.input} placeholder="Email address" accessibilityLabel="Email login address" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={value=>{setEmail(value);if(!otpCodeBelongsToEmail(value,codeSentEmail))setCode('')}}/>
+ <Pressable accessibilityRole="button" disabled={busy||resendRemaining>0} onPress={signin} style={s.button}><Text style={s.white}>{resendRemaining>0?'Resend available in '+resendRemaining+'s':codeSentEmail?'Resend email code':'Email me a login code'}</Text></Pressable>{codeSentEmail?<Text style={s.description}>Code requested for {codeSentEmail}. Codes expire; request a new one if verification fails.</Text>:null}<TextInput style={s.input} placeholder="Email verification code" keyboardType="number-pad" autoCapitalize="none" value={code} onChangeText={setCode}/><Pressable accessibilityRole="button" disabled={busy||!normalizeEmailOtp(code)||!otpCodeBelongsToEmail(email,codeSentEmail)} onPress={verify} style={s.button}><Text style={s.white}>Verify email code</Text></Pressable></>:
  <><Text style={s.description}>Signed in privately.</Text>
  {!member?<><TextInput style={s.input} placeholder="Country, e.g. PK" maxLength={2} autoCapitalize="characters" value={country} onChangeText={setCountry}/>
  <Pressable accessibilityRole="button" disabled={busy} onPress={()=>Alert.alert('Adult-only public challenge',
