@@ -8,4 +8,12 @@ assert.deepEqual(normalizeReports({nature:'uncomfortable',unknown:'irrelevant',c
 assert.deepEqual(flagActivity({},'calm','irrelevant',ids),{calm:'irrelevant'});
 assert.throws(()=>flagActivity({},'missing','irrelevant',ids));
 assert.throws(()=>flagActivity({},'calm','invalid',ids));
-console.log('PASS: local-only Joy Feed feedback with bounded validated IDs/reasons');
+// The Android native Alert API cannot reliably render four action buttons.
+const fs=require('node:fs');
+const screen=fs.readFileSync('components/OfflineActivities.js','utf8');
+assert.match(screen,/flaggingId===item\.id/);
+assert.match(screen,/Object\.entries\(REASONS\)\.map/);
+assert.match(screen,/accessibilityLabel="Cancel private activity feedback"/);
+assert.match(screen,/Your feedback stays on this device/);
+assert.doesNotMatch(screen,/Alert\.alert\('Flag this activity on my device'/);
+console.log('PASS: local-only Joy Feed feedback and Android-accessible inline reason choices');
