@@ -57,6 +57,7 @@ jobs:
           node tests/leaderboardMigration.test.cjs
           node tests/feedFeedback.test.cjs
           node tests/memoryGarden.test.cjs
+          node tests/reviewedVideoCatalog.test.cjs
           node tests/localWriteQueue.test.cjs
       - name: Run privacy & release preflight
         run: python3 scripts/privacy_preflight.py
