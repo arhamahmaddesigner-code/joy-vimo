@@ -6,6 +6,7 @@ import {ACTIVITIES} from '../lib/offlineActivities';
 import MemoryGarden from './MemoryGarden';
 import ReviewedVideoSection from './ReviewedVideoSection';
 import {feedWriteQueue} from '../lib/localWriteQueue';
+import {readFeedPreferences} from '../lib/feedPreferenceLoad';
 import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
@@ -17,15 +18,19 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
  const [reports,setReports]=useState({});
  const [flaggingId,setFlaggingId]=useState(null);
  const [showMemoryGarden,setShowMemoryGarden]=useState(false);
+ const [feedStatus,setFeedStatus]=useState('loading');
+ const [loadAttempt,setLoadAttempt]=useState(0);
  useEffect(()=>{
   let live=true;
-  AsyncStorage.multiGet([HIDDEN_KEY,REPORTS_KEY]).then(rows=>{
+  setFeedStatus('loading');
+  readFeedPreferences(AsyncStorage,feedWriteQueue,KNOWN_IDS).then(saved=>{
    if(!live)return;
-   try{setHidden(normalizeHidden(JSON.parse(rows[0][1]||'[]'),KNOWN_IDS))}catch{setHidden([])}
-   try{setReports(normalizeReports(JSON.parse(rows[1][1]||'{}'),KNOWN_IDS))}catch{setReports({})}
-  }).catch(()=>{if(live)Alert.alert('Feed settings unavailable','Saved preferences could not be loaded. Try reopening Joy Feed.')});
+   setHidden(saved.hidden);
+   setReports(saved.reports);
+   setFeedStatus('ready');
+  }).catch(()=>{if(live)setFeedStatus('error')});
   return()=>{live=false};
- },[]);
+ },[loadAttempt]);
  async function hide(id){
   if(!KNOWN_IDS.includes(id))return;
   try{await feedWriteQueue.enqueue(async()=>{
@@ -69,6 +74,11 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
  const dayNumber=Math.floor(new Date(today.getFullYear(),today.getMonth(),today.getDate(),12).getTime()/86400000);
  const dailyPick=activities.length?activities[((dayNumber%activities.length)+activities.length)%activities.length]:null;
  function startActivity(item){setCurrent(item);setStep(0)}
+ if(feedStatus!=='ready')return <View style={s.card}>
+  <Text style={s.title}>Joy Feed preferences</Text>
+  <Text style={s.detail}>{feedStatus==='loading'?'Loading private feed preferences…':'Could not load saved feed settings. Activities are hidden until preferences are available.'}</Text>
+  {feedStatus==='error'?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>setLoadAttempt(n=>n+1)}><Text style={s.white}>Retry loading Joy Feed</Text></Pressable>:null}
+ </View>;
  return <View>
   <Text style={s.heading}>Joy breaks, not infinite scrolling</Text>
   <ReviewedVideoSection age={age} interests={interests}/>
