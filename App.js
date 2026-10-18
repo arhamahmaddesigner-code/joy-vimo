@@ -18,6 +18,7 @@ import JoyCompanion from './components/JoyCompanion';
 import PrivacyDataPanel from './components/PrivacyDataPanel';
 import DailyReminders,{cancelSavedReminder} from './components/DailyReminders';
 import {joySupabase,eraseLocalAuth} from './lib/joySupabase';
+import {requiresOfflineAuthIsolation,canPostLeaderboardAction} from './lib/leaderboardAuth';
 import {computeProgress} from './lib/progress';
 import {normalizeGoals,goalProgress} from './lib/goals';
 import {nativeCooldownSummary} from './lib/focusStatus';
@@ -52,6 +53,7 @@ function AppMain(){
  const update=patch=>setData(x=>({...x,...patch}));
  useEffect(()=>{let ok=true;(async()=>{try{const raw=await AsyncStorage.getItem(KEY);if(raw){const p=JSON.parse(raw);if(ok){setData({...createInitial(),...p,rules:{...createInitial().rules,...p.rules},domains:p.domains||[],domainRulesEnabled:!!p.domainRulesEnabled});if(p.age)setStep('done')}}else{const old=await AsyncStorage.getItem('@joyvimo/qa-v06');if(old&&ok){const p=JSON.parse(old);setData(x=>({...x,xp:p.xp||0,claims:p.claims||{},interests:p.interests||x.interests}))}}}catch{}finally{if(ok)setReady(true)}})();return()=>{ok=false}},[]);
  useEffect(()=>{if(ready&&data.age)persistence.current.save(data).catch(()=>{})},[data,ready]);
+ useEffect(()=>{if(ready&&requiresOfflineAuthIsolation(data.age)){eraseLocalAuth().catch(()=>{});}},[ready,data.age]);
  async function refresh(){
   if(data.age==='kid'||!native.current){setFocusStatus(null);return}
   try{setFocusStatus(native.current.getFocusStatus?.()||null)}catch{setFocusStatus(null)}
@@ -78,7 +80,7 @@ function AppMain(){
    setData(previous=>claimAction(previous,id,xp).state);
    Alert.alert('Small win!','+'+xp+' XP earned. Keep going at your own pace.');
    // Opt-in adult profile only. Failed network calls never affect local rewards.
-   if(data.age==='adult'&&joySupabase){(async()=>{
+   if(data.age==='adult'&&canPostLeaderboardAction(id)&&joySupabase){(async()=>{
      try{const {data:{session}}=await joySupabase.auth.getSession();if(!session)return;
        const {data:profile}=await joySupabase.from('joy_public_profiles').select('visible').eq('user_id',session.user.id).maybeSingle();
        if(profile?.visible)await joySupabase.rpc('joy_claim_positive_action',{p_action_key:id});
