@@ -4,6 +4,7 @@ import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {ACTIVITIES} from '../lib/offlineActivities';
 import MemoryGarden from './MemoryGarden';
+import {feedWriteQueue} from '../lib/localWriteQueue';
 import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
@@ -26,20 +27,30 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
  },[]);
  async function hide(id){
   if(!KNOWN_IDS.includes(id))return;
-  const next=normalizeHidden([...hidden,id],KNOWN_IDS);
-  try{await AsyncStorage.setItem(HIDDEN_KEY,JSON.stringify(next));setHidden(next)}
+  try{await feedWriteQueue.enqueue(async()=>{
+   const raw=await AsyncStorage.getItem(HIDDEN_KEY);
+   const next=normalizeHidden([...normalizeHidden(JSON.parse(raw||'[]'),KNOWN_IDS),id],KNOWN_IDS);
+   await AsyncStorage.setItem(HIDDEN_KEY,JSON.stringify(next));setHidden(next);
+  })}
   catch{Alert.alert('Could not save','Your activity preference was not saved. Please try again.')}
  }
  async function restore(){
-  try{await AsyncStorage.removeItem(HIDDEN_KEY);setHidden([])}
+  try{await feedWriteQueue.enqueue(async()=>{await AsyncStorage.removeItem(HIDDEN_KEY);setHidden([])})}
   catch{Alert.alert('Could not restore','Please try again.')}
  }
  async function saveLocalFlag(id,reason){
   try{
-   const nextReports=flagActivity(reports,id,reason,KNOWN_IDS);
-   const nextHidden=normalizeHidden([...hidden,id],KNOWN_IDS);
-   await AsyncStorage.multiSet([[REPORTS_KEY,JSON.stringify(nextReports)],[HIDDEN_KEY,JSON.stringify(nextHidden)]]);
-   setReports(nextReports);setHidden(nextHidden);
+   const saved=await feedWriteQueue.enqueue(async()=>{
+    const rows=await AsyncStorage.multiGet([REPORTS_KEY,HIDDEN_KEY]);
+    const previousReports=normalizeReports(JSON.parse(rows[0][1]||'{}'),KNOWN_IDS);
+    const previousHidden=normalizeHidden(JSON.parse(rows[1][1]||'[]'),KNOWN_IDS);
+    const nextReports=flagActivity(previousReports,id,reason,KNOWN_IDS);
+    const nextHidden=normalizeHidden([...previousHidden,id],KNOWN_IDS);
+    await AsyncStorage.multiSet([[REPORTS_KEY,JSON.stringify(nextReports)],[HIDDEN_KEY,JSON.stringify(nextHidden)]]);
+    setReports(nextReports);setHidden(nextHidden);
+    return true;
+   });
+   if(!saved)return;
    Alert.alert('Saved privately','This activity has been hidden and your feedback saved on this device only. It was NOT submitted to a moderation team.');
   }catch{Alert.alert('Could not save feedback','Please try again. No online report was submitted.')}
  }
@@ -48,7 +59,7 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
   setFlaggingId(current=>current===id?null:id);
  }
  async function clearFlags(){
-  try{await AsyncStorage.removeItem(REPORTS_KEY);setReports({})}
+  try{await feedWriteQueue.enqueue(async()=>{await AsyncStorage.removeItem(REPORTS_KEY);setReports({})})}
   catch{Alert.alert('Could not clear','Please try again.')}
  }
  const activities=ACTIVITIES.filter(x=>interests.includes(x.topic)&&!hidden.includes(x.id));
