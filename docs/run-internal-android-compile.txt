@@ -40,3 +40,4 @@ Sequential Android Build #40: validate fifteen-minute local reminder customizati
 Sequential Build #41: verify concurrent XP awards and duplicate tap guard in full integrated native Android release compile. Internal only, no APK upload. 2026-10-18.
 Sequential Build #42: test serialized local feed preference writes and erase barrier; full private native Android compile only, no APK upload. 2026-10-18.
 Sequential Build #43: align private APK regression checks with Android CI and report signing secret presence without exposing values; internal compile only, no artifact upload. 2026-10-18.
+Sequential Android Build #44: verify licensed-video age/review gate (currently no approved media or playback), privacy policy, unit checks and full native compilation. Private internal compile only, no APK upload. 2026-10-18.
