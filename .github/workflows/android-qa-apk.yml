@@ -57,6 +57,7 @@ jobs:
           node tests/cloudActionGate.test.cjs
           node tests/leaderboardMigration.test.cjs
           node tests/feedFeedback.test.cjs
+          node tests/feedPreferenceLoad.test.cjs
           node tests/memoryGarden.test.cjs
           node tests/reviewedVideoCatalog.test.cjs
           node tests/approvedVideoPlayer.test.cjs
