@@ -37,3 +37,4 @@ Sequential full Android Build #37: compile accessible on-screen Joy Feed feedbac
 Sequential Android Build #38: full native compilation and privacy/unit checks for new finite offline Memory Garden game, complete Android accessibility feedback flow. No APK artifact upload or public distribution. 2026-10-18.
 Sequential Android Build #39: verify email-bound OTP code entry, client resend cooldown and safe age/account changes. Full native Android compile, no APK uploaded. 2026-10-18.
 Sequential Android Build #40: validate fifteen-minute local reminder customization and safe owned-notification cleanup, with full native compile. No APK published. 2026-10-18.
+Sequential Build #41: verify concurrent XP awards and duplicate tap guard in full integrated native Android release compile. Internal only, no APK upload. 2026-10-18.
