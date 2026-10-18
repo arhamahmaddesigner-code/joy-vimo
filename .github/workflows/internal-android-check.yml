@@ -71,6 +71,19 @@ jobs:
         run: python3 scripts/ensure_qa_signing.py
         env:
           JOY_PUBLISH_PRIVATE_APK: 'false'
+      - name: Report private signing readiness (no secret values)
+        env:
+          JOY_QA_KEYSTORE_BASE64: ${{ secrets.JOY_QA_KEYSTORE_BASE64 }}
+          JOY_QA_STORE_PASSWORD: ${{ secrets.JOY_QA_STORE_PASSWORD }}
+          JOY_QA_KEY_ALIAS: ${{ secrets.JOY_QA_KEY_ALIAS }}
+          JOY_QA_KEY_PASSWORD: ${{ secrets.JOY_QA_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [[ -n "$JOY_QA_KEYSTORE_BASE64" && -n "$JOY_QA_STORE_PASSWORD" && -n "$JOY_QA_KEY_ALIAS" && -n "$JOY_QA_KEY_PASSWORD" ]]; then
+            echo "Private QA signing: all four required secret inputs are present (keystore validation still pending)."
+          else
+            echo "Private QA signing: not ready; at least one required protected input is missing. Internal Android compilation continues without artifact upload."
+          fi
       - name: Compile integrated Android
         run: cd android && ./gradlew :app:assembleRelease --no-daemon --stacktrace
       - name: Verify local output exists
