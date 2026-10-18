@@ -57,6 +57,7 @@ jobs:
           node tests/leaderboardMigration.test.cjs
           node tests/feedFeedback.test.cjs
           node tests/memoryGarden.test.cjs
+          node tests/reviewedVideoCatalog.test.cjs
           python3 scripts/privacy_preflight.py
       - name: Fast JavaScript and JSX syntax preflight
         run: |
