@@ -44,3 +44,4 @@ Sequential Android Build #44: verify licensed-video age/review gate (currently n
 Sequential Build #45: full native compilation of review-gated, manually started Expo video playback. No licensed media yet. No APK upload. 2026-10-18.
 Sequential Build #46: Expo video loading and failure UI with manual retry, no autoplay, native Android compile; no private APK upload. 2026-10-18.
 Sequential Android Build #47: protect under-18 private mode from persisted online sessions and prevent unsupported cloud reward IDs; full internal native compile only. 2026-10-18.
+Sequential Android Build #48: protect pending adult leaderboard cloud reward requests against child/teen mode and local-erasure races. Compile native Android and tests; no APK upload. 2026-10-18.
