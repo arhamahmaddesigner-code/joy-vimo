@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const {createCloudActionGate}=require('../lib/cloudActionGate');
+const gate=createCloudActionGate('adult');
+const a=gate.capture();assert.equal(gate.permits(a),true);
+gate.setAge('kid');assert.equal(gate.permits(a),false);assert.equal(gate.capture(),null);
+gate.setAge('adult');const b=gate.capture();assert.equal(gate.permits(b),true);
+gate.suspend();assert.equal(gate.permits(b),false);assert.equal(gate.capture(),null);
+gate.resume('adult');assert.equal(gate.permits(b),false);
+const c=gate.capture();assert.equal(gate.permits(c),true);
+const app=require('node:fs').readFileSync('App.js','utf8');
+assert.match(app,/cloudActionGate\.current\.permits\(actionEpoch\)/);
+assert.match(app,/cloudActionGate\.current\.suspend\(\)/);
+console.log('PASS: adult-only cloud request epochs invalidated on age change and erase');
