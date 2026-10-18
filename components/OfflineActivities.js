@@ -4,12 +4,13 @@ import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {ACTIVITIES} from '../lib/offlineActivities';
 import MemoryGarden from './MemoryGarden';
+import ReviewedVideoSection from './ReviewedVideoSection';
 import {feedWriteQueue} from '../lib/localWriteQueue';
 import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
 const KNOWN_IDS=ACTIVITIES.map(item=>item.id);
-export default function OfflineActivities({interests,onInterestsChange,claims,onComplete}){
+export default function OfflineActivities({age,interests,onInterestsChange,claims,onComplete}){
  const [current,setCurrent]=useState(null);
  const [step,setStep]=useState(0);
  const [hidden,setHidden]=useState([]);
@@ -70,6 +71,7 @@ export default function OfflineActivities({interests,onInterestsChange,claims,on
  function startActivity(item){setCurrent(item);setStep(0)}
  return <View>
   <Text style={s.heading}>Joy breaks, not infinite scrolling</Text>
+  <ReviewedVideoSection age={age} interests={interests}/>
   <Text style={s.detail}>Six guided offline activities and one finite memory mini-game. No ads, autoplay, login, uploads, algorithmic feed or tracking.</Text>
   <Pressable accessibilityRole="button" accessibilityState={{expanded:showMemoryGarden}} onPress={()=>setShowMemoryGarden(x=>!x)} style={s.pickButton}><Text style={s.white}>{showMemoryGarden?'Close Memory Garden':'Play Memory Garden · offline mini-game'}</Text></Pressable>
   {showMemoryGarden?<MemoryGarden onComplete={onComplete}/>:null}
