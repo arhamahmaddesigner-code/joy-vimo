@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const section=fs.readFileSync('components/ReviewedVideoSection.js','utf8');
+const player=fs.readFileSync('components/ApprovedVideoPlayer.js','utf8');
+assert.ok(section.includes('availableReviewedVideos(age,interests)'));
+assert.ok(section.includes('videos.find(v=>v.id===selected)'));
+assert.ok(section.includes('ApprovedVideoPlayer'));
+assert.ok(player.includes('p.loop=false;p.pause()'));
+assert.ok(player.includes("state!=='active'"));
+assert.ok(player.includes('nativeControls'));
+assert.ok(player.includes('player.pause();onClose()'));
+assert.ok(require('../package.json').dependencies['expo-video']);
+console.log('PASS: manual finite reviewed-video player controls');
