@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict');
+const {checkPrivateApkReadiness,run}=require('../scripts/privateApkReleaseGate.cjs');
+const manifest=require('../docs/private-apk-release-gates.json');
+const blockers=checkPrivateApkReadiness(manifest);
+assert.equal(blockers.length>=4,true);
+assert.equal(run({env:{JOY_PUBLISH_PRIVATE_APK:'false'}}),true);
+assert.throws(()=>run({env:{JOY_PUBLISH_PRIVATE_APK:'true'}}),/conditions are incomplete/);
+const workflow=require('node:fs').readFileSync('.github/workflows/android-qa-apk.yml','utf8');
+assert.ok(workflow.includes('Enforce full-scope owner APK release gates'));
+assert.ok(workflow.indexOf('Enforce full-scope owner APK release gates')<workflow.indexOf('Configure signing'));
+console.log('PASS: incomplete rights, backend and owner approval block private APK distribution');
