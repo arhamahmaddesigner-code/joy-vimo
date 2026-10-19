@@ -67,6 +67,10 @@ jobs:
       - name: Fast JavaScript and JSX syntax preflight
         run: |
           node -e "const fs=require('fs');const babel=require('@babel/parser');for(const f of ['App.js',...fs.readdirSync('components').filter(x=>x.endsWith('.js')).map(x=>'components/'+x)])babel.parse(fs.readFileSync(f,'utf8'),{sourceType:'module',plugins:['jsx']});console.log('PASS: JSX syntax');"
+      - name: Enforce full-scope owner APK release gates
+        env:
+          JOY_PUBLISH_PRIVATE_APK: ${{ inputs.publish_private_apk }}
+        run: node scripts/privateApkReleaseGate.cjs
       - name: Generate approved branding assets
         run: npm run assets
       - name: Assign unique private QA versionCode
