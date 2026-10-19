@@ -25,6 +25,9 @@ function checkPrivateApkReadiness(manifest,catalog=VIDEO_ENTRIES){
  if(manifest.liveBackendMultiAccountVerified!==true||!reliableEvidence(manifest.backendEvidence)){
   issues.push('Live OTP, adult leaderboard and cross-account security verification are pending');
  }
+ if(manifest.integratedAndroidQaVerified!==true||!reliableEvidence(manifest.androidQaEvidence)){
+  issues.push('Integrated pre-owner Android QA evidence is pending');
+ }
  return issues;
 }
 function run({env=process.env,manifestFile=defaultManifest,catalog=VIDEO_ENTRIES}={}){
@@ -46,3 +49,4 @@ function run({env=process.env,manifestFile=defaultManifest,catalog=VIDEO_ENTRIES
 }
 if(require.main===module){try{run()}catch(e){console.error(e.message);process.exitCode=1}}
 module.exports={reliableEvidence,checkPrivateApkReadiness,run};
+

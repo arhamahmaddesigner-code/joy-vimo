@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: joy-vimo-private-ci
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Compile installable APK
@@ -34,40 +38,15 @@ jobs:
       - name: Android SDK
         run: test -d "$ANDROID_HOME/platforms"
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Match Expo SDK dependencies
-        run: npx expo install --fix
+        run: npx expo install --check
         env:
           CI: '1'
       - name: Verify app policy unit assertions
-        run: |
-          node tests/policy.test.cjs
-          node tests/domainRules.test.cjs
-          node tests/scheduleRules.test.cjs
-          node tests/progress.test.cjs
-          node tests/goals.test.cjs
-          node tests/focusStatus.test.cjs
-          node tests/focusSync.test.cjs
-          node tests/localErase.test.cjs
-          node tests/localPersistence.test.cjs
-          node tests/reminderScheduler.test.cjs
-          node tests/mobileLayout.test.cjs
-          node tests/qaVersion.test.cjs
-          node tests/leaderboardAuth.test.cjs
-          node tests/cloudActionGate.test.cjs
-          node tests/leaderboardMigration.test.cjs
-          node tests/feedFeedback.test.cjs
-          node tests/feedPreferenceLoad.test.cjs
-          node tests/memoryGarden.test.cjs
-          node tests/reviewedVideoCatalog.test.cjs
-          node tests/approvedVideoPlayer.test.cjs
-          node tests/privateApkReleaseGate.test.cjs
-          node tests/localWriteQueue.test.cjs
-      - name: Run privacy & release preflight
-        run: python3 scripts/privacy_preflight.py
+        run: npm test
       - name: Fast JavaScript and JSX syntax preflight
-        run: |
-          node -e "const fs=require('fs');const babel=require('@babel/parser');for(const f of ['App.js',...fs.readdirSync('components').filter(x=>x.endsWith('.js')).map(x=>'components/'+x)])babel.parse(fs.readFileSync(f,'utf8'),{sourceType:'module',plugins:['jsx']});console.log('PASS: JSX syntax');"
+        run: npm run check:syntax
       - name: Enforce full-scope owner APK release gates
         env:
           JOY_PUBLISH_PRIVATE_APK: ${{ inputs.publish_private_apk }}
@@ -136,3 +115,4 @@ jobs:
           path: android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
+

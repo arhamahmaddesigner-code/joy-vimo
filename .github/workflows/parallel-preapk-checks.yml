@@ -41,6 +41,7 @@ jobs:
           set -euo pipefail
           case "$LANE" in
             unit-tests)
+              npm ci --no-audit --no-fund
               for test_file in tests/*.test.cjs; do
                 node "$test_file"
               done
@@ -49,12 +50,12 @@ jobs:
               python3 scripts/privacy_preflight.py
               ;;
             jsx-and-assets)
-              npm install --no-audit --no-fund
+              npm ci --no-audit --no-fund
               node -e "const fs=require('fs');const parser=require('@babel/parser');const files=['App.js',...fs.readdirSync('components').filter(x=>x.endsWith('.js')).map(x=>'components/'+x),...fs.readdirSync('lib').filter(x=>x.endsWith('.js')).map(x=>'lib/'+x)];for(const file of files)parser.parse(fs.readFileSync(file,'utf8'),{sourceType:'module',plugins:['jsx']});console.log('PASS: source JavaScript/JSX parsing');"
               npm run assets
               ;;
             expo-dependency-check)
-              npm install --no-audit --no-fund
+              npm ci --no-audit --no-fund
               npx expo install --check
               ;;
             *)
@@ -62,3 +63,4 @@ jobs:
               exit 2
               ;;
           esac
+

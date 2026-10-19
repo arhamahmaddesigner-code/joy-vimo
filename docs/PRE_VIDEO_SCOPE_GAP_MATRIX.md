@@ -1,5 +1,6 @@
 # JOY VIMO — mandatory pre-video APK scope (2026-10-13)
 
+> Current evidence: [2026-10-19 repository audit](REPOSITORY_AUDIT_2026-10-19.md). Status entries below are historical; do not treat them as current completion proof.
 Owner instruction: Build the entire agreed integrated Android APK scope BEFORE asking for a single Realme C71 screen-recorded review. The recording is for refinement, not for discovering missing planned features. Do not publish Play/iOS.
 
 ## Existing, but requires Android reliability verification
@@ -41,3 +42,4 @@ Owner instruction: Build the entire agreed integrated Android APK scope BEFORE a
 - Run 38392213517 passed based on latest checked Actions status; subsequent main changes require another compile.
 - Dedicated JOY VIMO Supabase database deployed; no ORYX project modifications.
 - Optional short-feed/content classification cannot guarantee filtering every third-party video.
+

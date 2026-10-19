@@ -79,7 +79,7 @@ feed_feedback=(root/"lib/feedFeedback.js").read_text()
 must("HIDDEN_KEY" in feed and "AsyncStorage.setItem(HIDDEN_KEY" in feed and "AsyncStorage.removeItem(HIDDEN_KEY" in feed and "'@joyvimo/joy-feed-hidden-v1'" in feed_feedback,"Feed hidden preferences must persist and support restoring")
 must("REPORTS_KEY" in feed and "AsyncStorage.multiSet(" in feed and "AsyncStorage.removeItem(REPORTS_KEY" in feed and "'@joyvimo/joy-feed-reports-v1'" in feed_feedback,"Private feed flags must save locally, support clearing and use an explicit storage key")
 must("'@joyvimo/joy-feed-reports-v1'" in (root/"lib/localErase.js").read_text(),"Local data erasure must include private feed feedback")
-must("tests/progress.test.cjs" in workflow,"Progress regression checks required")
+must("run: npm test" in workflow and "endsWith('.test.cjs')" in (root/"scripts/runFastChecks.cjs").read_text(),"All discovered regression checks must run before private APK packaging")
 must("withPrivateAndroidSettings" in app_cfg["expo"].get("plugins",[])[0],"Android backup privacy plugin missing")
 plugin=(root/"plugins/withPrivateAndroidSettings.js").read_text()
 must("android:allowBackup" in plugin and "'false'" in plugin,"Android backup must be disabled")
@@ -100,3 +100,4 @@ if errors:
     for e in errors:print("FAIL:",e)
     sys.exit(1)
 print("PASS: static privacy preflight (does NOT verify OS enforcement or APK security).")
+

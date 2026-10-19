@@ -1,5 +1,6 @@
 # Personal Android candidate — build/install checklist
 
+> Current evidence: [2026-10-19 repository audit](REPOSITORY_AUDIT_2026-10-19.md). Status entries below are historical; do not treat them as current completion proof.
 ## Current scope (October 2026)
 - Optional Focus Shield using Android Accessibility package/window metadata, daily opening caps, daily minutes, current-session checks and preset schedule windows; requires explicit consent and system permission. Realme C71 reliability **not yet verified**.
 - Android Usage Access local app timing readings; does not read browser or app screen content.
@@ -31,3 +32,4 @@ This is an evolving private QA candidate, not a completed clinical treatment or 
 - Preserve the same keystore for future APK updates. Build workflow verifies APK signature, records certificate fingerprint and SHA-256 in restricted workflow logs before uploading the artifact.
 - Verify signed build on Realme C71: install/upgrade without data loss; three-denial cooldown and safety pause; device reboot/battery restrictions; consent and permissions; local export/erase; Joy Feed/companion/challenges at different font sizes.
 - Third-party entertainment video licensing, live authentication/backend security, and age-specific launch compliance remain separate blockers. Do not label the APK a finished public product.
+

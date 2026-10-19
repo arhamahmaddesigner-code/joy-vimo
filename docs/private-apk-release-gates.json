@@ -1,11 +1,13 @@
 {
   "schemaVersion": 1,
   "reviewScope": "full-integrated",
-  "ownerApprovedPrivateReview": false,
-  "ownerApprovalEvidence": "",
+  "ownerApprovedPrivateReview": true,
+  "ownerApprovalEvidence": "https://github.com/arhamahmaddesigner-code/joy-vimo/blob/main/docs/OWNER_PRIVATE_REVIEW_AUTHORIZATION.md",
   "licensedContentRightsVerified": false,
   "rightsReviewEvidence": "",
   "liveBackendMultiAccountVerified": false,
   "backendEvidence": "",
-  "note": "These are intentionally false until evidence is checked. No unlicensed video or unverified backend may be represented as complete. Private review APK remains blocked; internal compilation continues."
+  "note": "Owner authorized one private full-scope Android review APK on 2026-10-19, conditional on completed features and release gates. Content, live backend and integrated QA remain unverified. No Play Store/iOS authorization.",
+  "integratedAndroidQaVerified": false,
+  "androidQaEvidence": ""
 }

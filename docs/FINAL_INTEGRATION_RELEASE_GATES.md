@@ -1,5 +1,6 @@
 # JOY VIMO — Final integrated Android release gates
 
+> Current evidence: [2026-10-19 repository audit](REPOSITORY_AUDIT_2026-10-19.md). Status entries below are historical; do not treat them as current completion proof.
 Status: **NOT YET COMPLETE**. Do not label any artifact final, or request owner install, until applicable gates pass.
 
 ## Implemented in source
@@ -44,3 +45,4 @@ Never upload sexual or intimate browsing history, passwords, SMS, contacts, view
 - Supabase security advisor shows five expected authenticated-callable SECURITY DEFINER RPC warnings; review capabilities and guardrails before multiuser public release. RLS and permissions alone are not proof of safety.
 - Email OTP delivery, live account flow, anonymous access resistance, cross-user data isolation, leaderboard calculations, age verification and client APK integration **not yet end-to-end tested**.
 - ORYX Development database was not modified.
+

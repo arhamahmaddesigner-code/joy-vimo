@@ -1,7 +1,12 @@
 node_modules/
 .expo/
-android/
-ios/
+/android/
+/ios/
 dist/
 *.keystore
 .env
+
+qa-evidence/
+__pycache__/
+supabase/.temp/
+assets/*.png

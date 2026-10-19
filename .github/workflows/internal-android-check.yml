@@ -1,7 +1,7 @@
 name: Internal Android Integration Check
 
 # Only runs for a deliberate internal QA trigger or explicit manual request.
-# No APK artifacts, releases, installs, or distribution.
+# No owner APK artifacts or distribution. Installs only on a disposable CI emulator.
 on:
   workflow_dispatch:
   push:
@@ -33,39 +33,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - name: Dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Match Expo dependencies
-        run: npx expo install --fix
+        run: npx expo install --check
         env:
           CI: '1'
       - name: Unit and privacy checks
-        run: |
-          node tests/policy.test.cjs
-          node tests/domainRules.test.cjs
-          node tests/scheduleRules.test.cjs
-          node tests/progress.test.cjs
-          node tests/goals.test.cjs
-          node tests/focusStatus.test.cjs
-          node tests/focusSync.test.cjs
-          node tests/localErase.test.cjs
-          node tests/localPersistence.test.cjs
-          node tests/localWriteQueue.test.cjs
-          node tests/reminderScheduler.test.cjs
-          node tests/mobileLayout.test.cjs
-          node tests/qaVersion.test.cjs
-          node tests/leaderboardAuth.test.cjs
-          node tests/cloudActionGate.test.cjs
-          node tests/leaderboardMigration.test.cjs
-          node tests/feedFeedback.test.cjs
-          node tests/feedPreferenceLoad.test.cjs
-          node tests/memoryGarden.test.cjs
-          node tests/reviewedVideoCatalog.test.cjs
-          node tests/approvedVideoPlayer.test.cjs
-          node tests/privateApkReleaseGate.test.cjs
-          python3 scripts/privacy_preflight.py
+        run: npm test
       - name: Fast JavaScript and JSX syntax preflight
-        run: |
-          node -e "const fs=require('fs');const babel=require('@babel/parser');for(const f of ['App.js',...fs.readdirSync('components').filter(x=>x.endsWith('.js')).map(x=>'components/'+x)])babel.parse(fs.readFileSync(f,'utf8'),{sourceType:'module',plugins:['jsx']});console.log('PASS: JSX syntax');"
+        run: npm run check:syntax
       - name: Generate assets
         run: npm run assets
       - name: Generate native Android source
@@ -95,3 +71,26 @@ jobs:
         run: |
           test -n "$(find android/app/build/outputs/apk/release -name '*.apk' -type f -print -quit)"
           echo "PASS: internal APK compiled but intentionally NOT uploaded"
+
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Internal offline Android UI smoke
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python3 scripts/androidSmoke.py
+      - name: Retain internal UI evidence only
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: internal-android-ui-evidence
+          path: qa-evidence/
+          if-no-files-found: ignore
+          retention-days: 14
