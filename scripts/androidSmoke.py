@@ -64,7 +64,7 @@ try:
         tap('Start my journey',scroll=True)
         find('Your week')
         screenshot(mode+'-home-'+str(width)+'dp-font-'+scale)
-        tap('Feed'); find('Joy Feed')
+        tap('Feed'); find('Joy breaks, not infinite scrolling')
         screenshot(mode+'-feed')
         tap('Progress'); find('Your progress')
         tap('Community privacy and rankings',scroll=True)

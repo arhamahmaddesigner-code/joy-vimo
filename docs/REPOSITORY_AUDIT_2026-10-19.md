@@ -11,7 +11,7 @@ This audit supersedes dated progress claims in the older scope/gap documents, no
 - All 22 baseline CJS test files and privacy preflight passed locally. Most component/native/security tests assert source strings or pure helpers; they are NOT device or backend end-to-end tests.
 - #51 job log explicitly reports at least one of the four protected signing inputs missing. Internal signing uses a disposable runner key.
 - `VIDEO_ENTRIES` is empty. Player/catalogue validation exist, but there is no approved entertainment-video collection.
-- All four live Supabase inspection requests (project, migrations, security advisors, SQL) returned `You do not have permission to perform this action`. No live database was changed and no live OTP/security result is claimed. ORYX was not accessed.
+- All four live Supabase inspection requests (project, migrations, security advisors, SQL) returned `You do not have permission to perform this action`. The installed/enabled connector lists only ORYX projects, not JOY VIMO: the connection needs the JOY VIMO account/organization. No project data was queried successfully, no database was changed, and no live OTP/security result is claimed. ORYX databases were not accessed.
 
 ## Feature reality
 
@@ -38,8 +38,9 @@ This audit supersedes dated progress claims in the older scope/gap documents, no
 3. Client overrides previously accepted any HTTPS project. Added exact JOY VIMO endpoint and publishable-key validation; another project or secret key now leaves the client disabled.
 4. Consolidated test discovery so new regressions cannot silently be omitted from hand-maintained workflow lists. Added lockfile; pinned resolved Supabase client and test-only PGlite. CI checks compatibility without rewriting dependencies.
 5. Added internal emulator smoke at API 35 for adult 360dp/1.0x, teen 390dp/1.3x, child 430dp/1.5x, offline navigation, private minor ranking controls and onboarding persistence. This is a sampled layout matrix, not exhaustive accessibility/OEM coverage.
-6. Both native workflows now share sequential concurrency. Owner distribution also requires explicit internal integrated-QA evidence; a green compile cannot satisfy this automatically.
-7. Recorded the owner's existing conditional private-APK authorization. No additional approval is needed merely to continue this authorized work. Technical release flags remain false.
+6. Both native workflows now share sequential concurrency. Future internal builds cache Gradle dependencies; owner signing workflow does not add a Gradle cache. Owner distribution also requires explicit internal integrated-QA evidence; a green compile cannot satisfy this automatically.
+7. Added real-keytool regression tests: valid credentials, wrong key/store passwords, missing inputs, invalid base64 and internal-only mode. Private-key unlock is now tested before Gradle; private signing material is removed after owner build attempts. Secrets themselves remain missing/unverified.
+8. Recorded the owner's existing conditional private-APK authorization. No additional approval is needed merely to continue this authorized work. Technical release flags remain false.
 
 ## Accurate remaining-work order
 

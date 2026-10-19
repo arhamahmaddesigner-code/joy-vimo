@@ -65,6 +65,10 @@ jobs:
           else
             echo "Private QA signing: not ready; at least one required protected input is missing. Internal Android compilation continues without artifact upload."
           fi
+      - name: Cache internal Gradle dependencies
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5
+        with:
+          dependency-graph: disabled
       - name: Compile integrated Android
         run: cd android && ./gradlew :app:assembleRelease --no-daemon --stacktrace
       - name: Verify local output exists

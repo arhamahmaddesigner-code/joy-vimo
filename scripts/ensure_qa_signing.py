@@ -57,8 +57,18 @@ if publish:
             "-alias", os.environ["JOY_QA_KEY_ALIAS"],
             "-storepass:env", "JOY_QA_STORE_PASSWORD"
         ], check=True, capture_output=True, text=True)
+        # Listing verifies only the store password. Exercise a private-key signing
+        # operation before Gradle so an incorrect key password fails immediately.
+        # CSR output stays in memory and is discarded; no private key is exported.
+        subprocess.run([
+            "keytool", "-certreq", "-keystore", str(keystore),
+            "-alias", os.environ["JOY_QA_KEY_ALIAS"],
+            "-storepass:env", "JOY_QA_STORE_PASSWORD",
+            "-keypass:env", "JOY_QA_KEY_PASSWORD"
+        ], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError:
-        raise SystemExit("Cannot unlock/verify stable signing keystore alias")
+        keystore.unlink(missing_ok=True)
+        raise SystemExit("Cannot unlock/verify stable signing keystore alias or private key")
     sign_name = "joyVimoPrivateQa"
     key_block = """
         joyVimoPrivateQa {
@@ -91,3 +101,4 @@ s = s[:r_start + 1] + release + s[r_end:]
 gradle.write_text(s)
 print("Private QA signing configured from reusable protected secrets"
       if publish else "Internal compile signing configured (NO artifact upload)")
+

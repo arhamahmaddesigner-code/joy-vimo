@@ -42,9 +42,7 @@ jobs:
           case "$LANE" in
             unit-tests)
               npm ci --no-audit --no-fund
-              for test_file in tests/*.test.cjs; do
-                node "$test_file"
-              done
+              npm test
               ;;
             privacy-audit)
               python3 scripts/privacy_preflight.py

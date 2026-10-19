@@ -116,3 +116,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Remove private signing material
+        if: ${{ always() }}
+        run: rm -f android/app/joyvimo-private-qa.keystore

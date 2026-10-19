@@ -11,4 +11,5 @@ const files=fs.readdirSync(path.join(root,'tests')).filter(f=>f.endsWith('.test.
 if(!files.length)throw Error('No tests discovered');
 for(const file of files)run(process.execPath,['tests/'+file]);
 run('python3',['scripts/privacy_preflight.py']);
+run('python3',['-m','unittest','discover','-s','tests','-p','test_*.py']);
 console.log(`PASS: ${files.length} test files and privacy preflight`);
