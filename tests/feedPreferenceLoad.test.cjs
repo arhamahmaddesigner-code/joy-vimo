@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {readFeedPreferences}=require('../lib/feedPreferenceLoad');
+const {readFeedPreferences,resetFeedPreferences}=require('../lib/feedPreferenceLoad');
 const {HIDDEN_KEY,REPORTS_KEY}=require('../lib/feedFeedback');
 async function main(){
  const known=['nature','calm'];
@@ -15,6 +15,19 @@ async function main(){
  const ui=require('node:fs').readFileSync('components/OfflineActivities.js','utf8');
  assert.match(ui,/if\(feedStatus!=='ready'\)return/);
  assert.match(ui,/Retry loading Joy Feed/);
+ const records=new Map([[HIDDEN_KEY,'["nature"]'],[REPORTS_KEY,'{"calm":"irrelevant"}'],['@joyvimo/v07','profile']]);
+ const resetStore={
+  multiRemove:async keys=>keys.forEach(k=>records.delete(k)),
+  multiGet:async keys=>keys.map(k=>[k,records.get(k)??null])
+ };
+ assert.equal(await resetFeedPreferences(resetStore,{enqueue:async work=>work()}),true);
+ assert.equal(records.has(HIDDEN_KEY),false);
+ assert.equal(records.has(REPORTS_KEY),false);
+ assert.equal(records.get('@joyvimo/v07'),'profile');
+ await assert.rejects(()=>resetFeedPreferences(resetStore,{enqueue:async()=>false}),/paused/);
+ const screen=require('node:fs').readFileSync('components/OfflineActivities.js','utf8');
+ assert.match(screen,/Reset only Joy Feed preferences/);
+ assert.match(screen,/Alert.alert\('Reset Joy Feed preferences\?'/);
  console.log('PASS: Joy Feed remains hidden until private preferences load and validates malformed storage');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
