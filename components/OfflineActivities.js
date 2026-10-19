@@ -6,7 +6,7 @@ import {ACTIVITIES} from '../lib/offlineActivities';
 import MemoryGarden from './MemoryGarden';
 import ReviewedVideoSection from './ReviewedVideoSection';
 import {feedWriteQueue} from '../lib/localWriteQueue';
-import {readFeedPreferences} from '../lib/feedPreferenceLoad';
+import {readFeedPreferences,resetFeedPreferences} from '../lib/feedPreferenceLoad';
 import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
@@ -31,6 +31,15 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
   }).catch(()=>{if(live)setFeedStatus('error')});
   return()=>{live=false};
  },[loadAttempt]);
+ function confirmFeedReset(){
+  Alert.alert('Reset Joy Feed preferences?','Only hidden activities and private local feedback flags will be cleared. Your XP, goals and other app data will remain.',[
+   {text:'Cancel',style:'cancel'},
+   {text:'Reset feed preferences',style:'destructive',onPress:async()=>{
+    try{await resetFeedPreferences(AsyncStorage,feedWriteQueue);setHidden([]);setReports({});setLoadAttempt(n=>n+1)}
+    catch{Alert.alert('Reset unavailable','Could not verify that feed preferences were cleared. No other app data was touched.')}
+   }}
+  ]);
+ }
  async function hide(id){
   if(!KNOWN_IDS.includes(id))return;
   try{await feedWriteQueue.enqueue(async()=>{
@@ -78,6 +87,7 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
   <Text style={s.title}>Joy Feed preferences</Text>
   <Text style={s.detail}>{feedStatus==='loading'?'Loading private feed preferences…':'Could not load saved feed settings. Activities are hidden until preferences are available.'}</Text>
   {feedStatus==='error'?<Pressable accessibilityRole="button" style={s.primary} onPress={()=>setLoadAttempt(n=>n+1)}><Text style={s.white}>Retry loading Joy Feed</Text></Pressable>:null}
+  {feedStatus==='error'?<Pressable accessibilityRole="button" style={s.secondary} onPress={confirmFeedReset}><Text style={s.secondaryText}>Reset only Joy Feed preferences</Text></Pressable>:null}
  </View>;
  return <View>
   <Text style={s.heading}>Joy breaks, not infinite scrolling</Text>
