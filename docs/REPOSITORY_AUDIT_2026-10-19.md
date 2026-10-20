@@ -5,6 +5,14 @@ This audit supersedes dated progress claims in the older scope/gap documents, no
 
 ## Verified evidence
 
+### Follow-up verified 2026-10-20
+
+- [Pre-APK QA #7](https://github.com/arhamahmaddesigner-code/joy-vimo/actions/runs/39289105999), head `9e3531253f2024997248c04d2ef78ef09980d870`: all four jobs passed, including 24 CJS suites, privacy checks, syntax/assets, dependency compatibility, and six real-keytool tests.
+- [Internal Android #52](https://github.com/arhamahmaddesigner-code/joy-vimo/actions/runs/39288347129): native release compiled successfully in 20m 4s. Overall run FAILED because the runner ran out of disk installing the API 35 emulator image (`No space left on device`, 85 MB remaining). UI tests did not run; no QA evidence artifact exists. This is not a passing Android QA result.
+- Follow-up workflow removes only unrelated preinstalled SDKs on the disposable GitHub-hosted runner, requires 24 GiB before compilation, provisions the emulator image first, and checks 4 GiB before starting the AVD. Build/emulator outcome must still be verified from the next run.
+
+### Original audit
+
 - [Internal Android build #51](https://github.com/arhamahmaddesigner-code/joy-vimo/actions/runs/39269207698): completed/success; unit/privacy/JSX, Expo prebuild and release compilation passed. No APK uploaded.
 - Latest 20 Actions checked: internal builds #36–51 passed. Older [pre-APK run #6](https://github.com/arhamahmaddesigner-code/joy-vimo/actions/runs/38939834566) failed only its privacy lane (`Feed hidden preferences must persist and support restoring`). The assertion passes in the audited current source and #51; historical run is not relabeled green.
 - No open issues/PRs returned by repository-scoped issue search. Release gaps primarily live in source/documents, not GitHub issues.

@@ -22,6 +22,18 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
+      - name: Reserve disk for native build and emulator
+        shell: bash
+        run: |
+          # These unrelated SDKs are disposable only on GitHub-hosted runners.
+          test "$RUNNER_ENVIRONMENT" = github-hosted
+          df -h /
+          sudo rm -rf -- /usr/share/dotnet /usr/local/.ghcup /opt/ghc /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          df -h /
+          python3 -c 'import shutil; free=shutil.disk_usage(".").free/2**30; print(f"Free before build: {free:.1f} GiB"); assert free >= 24, "Need 24 GiB for native build plus emulator; stop before compilation"'
+      - name: Provision emulator image before compiling
+        # Fail early on image download/disk issues rather than after a 20-minute build.
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "system-images;android-35;google_apis;x86_64"'
       - name: Set up Node.js
         uses: actions/setup-node@v5
         with:
@@ -78,6 +90,8 @@ jobs:
 
       - name: Enable emulator acceleration
         run: |
+          df -h /
+          python3 -c 'import shutil; free=shutil.disk_usage(".").free/2**30; print(f"Free before AVD: {free:.1f} GiB"); assert free >= 4, "Need 4 GiB for disposable emulator data"'
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
