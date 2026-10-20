@@ -7,7 +7,7 @@
   "rightsReviewEvidence": "",
   "liveBackendMultiAccountVerified": false,
   "backendEvidence": "",
-  "note": "Owner authorized one private full-scope Android review APK on 2026-10-19, conditional on completed features and release gates. Content, live backend and integrated QA remain unverified. No Play Store/iOS authorization.",
+  "note": "Owner authorized one private full-scope Android review APK on 2026-10-19, conditional on completed features and release gates. Internal build #54 passed native compilation and sampled offline three-age emulator smoke; full integrated acceptance is still open. Approved real content, live OTP/two-account backend QA and stable signing remain blocked. No Play Store/iOS authorization.",
   "integratedAndroidQaVerified": false,
   "androidQaEvidence": ""
 }
