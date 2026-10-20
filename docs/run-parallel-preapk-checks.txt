@@ -9,3 +9,5 @@ Verify local-only Joy Feed hide/flag preferences, export and erase integration w
 2026-10-19: Fast verification of signing private-key unlock tests, cleanup, reviewed UI smoke assertion and internal Gradle cache configuration. No second native build triggered.
 
 2026-10-20: Batch video readiness checks: creator attribution, strict licence scope/dates/expiry, private namespaced hide/feedback, persistence/reset regressions. Catalogue remains empty; no native build triggered by this checkpoint.
+
+2026-10-20: Validate real rendered React video lifecycle regression and exact React-matching dev test dependency; 26 CJS suites, six keytool tests. No APK or native build from this fast-QA checkpoint.
