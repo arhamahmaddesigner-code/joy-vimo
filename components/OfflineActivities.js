@@ -5,12 +5,13 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {ACTIVITIES} from '../lib/offlineActivities';
 import MemoryGarden from './MemoryGarden';
 import ReviewedVideoSection from './ReviewedVideoSection';
+import {VIDEO_ENTRIES,videoPreferenceId} from '../lib/reviewedVideoCatalog';
 import {feedWriteQueue} from '../lib/localWriteQueue';
 import {readFeedPreferences,resetFeedPreferences} from '../lib/feedPreferenceLoad';
 import {REPORTS_KEY,HIDDEN_KEY,REASONS,normalizeReports,normalizeHidden,flagActivity} from '../lib/feedFeedback';
 const PURPLE='#6737F5',INK='#21134C',MUTED='#716C8A';
 const TOPICS=['Nature','Animals','Creativity','Learning','Comedy','Calm'];
-const KNOWN_IDS=ACTIVITIES.map(item=>item.id);
+const KNOWN_IDS=[...ACTIVITIES.map(item=>item.id),...VIDEO_ENTRIES.map(videoPreferenceId)];
 export default function OfflineActivities({age,interests,onInterestsChange,claims,onComplete}){
  const [current,setCurrent]=useState(null);
  const [step,setStep]=useState(0);
@@ -32,7 +33,7 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
   return()=>{live=false};
  },[loadAttempt]);
  function confirmFeedReset(){
-  Alert.alert('Reset Joy Feed preferences?','Only hidden activities and private local feedback flags will be cleared. Your XP, goals and other app data will remain.',[
+  Alert.alert('Reset Joy Feed preferences?','Only hidden activities/videos and private local feedback flags will be cleared. Your XP, goals and other app data will remain.',[
    {text:'Cancel',style:'cancel'},
    {text:'Reset feed preferences',style:'destructive',onPress:async()=>{
     try{await resetFeedPreferences(AsyncStorage,feedWriteQueue);setHidden([]);setReports({});setLoadAttempt(n=>n+1)}
@@ -47,7 +48,7 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
    const next=normalizeHidden([...normalizeHidden(JSON.parse(raw||'[]'),KNOWN_IDS),id],KNOWN_IDS);
    await AsyncStorage.setItem(HIDDEN_KEY,JSON.stringify(next));setHidden(next);
   })}
-  catch{Alert.alert('Could not save','Your activity preference was not saved. Please try again.')}
+  catch{Alert.alert('Could not save','Your content preference was not saved. Please try again.')}
  }
  async function restore(){
   try{await feedWriteQueue.enqueue(async()=>{await AsyncStorage.removeItem(HIDDEN_KEY);setHidden([])})}
@@ -66,7 +67,7 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
     return true;
    });
    if(!saved)return;
-   Alert.alert('Saved privately','This activity has been hidden and your feedback saved on this device only. It was NOT submitted to a moderation team.');
+   Alert.alert('Saved privately','This content has been hidden and your feedback saved on this device only. It was NOT submitted to a moderation team.');
   }catch{Alert.alert('Could not save feedback','Please try again. No online report was submitted.')}
  }
  function flag(id){
@@ -91,7 +92,7 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
  </View>;
  return <View>
   <Text style={s.heading}>Joy breaks, not infinite scrolling</Text>
-  <ReviewedVideoSection age={age} interests={interests}/>
+  <ReviewedVideoSection age={age} interests={interests} hidden={hidden} onHide={hide} onFlag={saveLocalFlag}/>
   <Text style={s.detail}>Six guided offline activities and one finite memory mini-game. No ads, autoplay, login, uploads, algorithmic feed or tracking.</Text>
   <Pressable accessibilityRole="button" accessibilityState={{expanded:showMemoryGarden}} onPress={()=>setShowMemoryGarden(x=>!x)} style={s.pickButton}><Text style={s.white}>{showMemoryGarden?'Close Memory Garden':'Play Memory Garden · offline mini-game'}</Text></Pressable>
   {showMemoryGarden?<MemoryGarden onComplete={onComplete}/>:null}
@@ -131,9 +132,10 @@ export default function OfflineActivities({age,interests,onInterestsChange,claim
       </View>;
    })}
    {!current&&activities.length===0?<View style={s.card}><Text style={s.title}>Choose something that feels right</Text><Text style={s.detail}>Select a topic above or restore hidden activities.</Text></View>:null}
-   {!current&&hidden.length>0?<Pressable accessibilityRole="button" onPress={restore} style={s.secondary}><Text style={s.secondaryText}>Restore hidden activities</Text></Pressable>:null}
+   {!current&&hidden.length>0?<Pressable accessibilityRole="button" onPress={restore} style={s.secondary}><Text style={s.secondaryText}>Restore hidden activities and videos</Text></Pressable>:null}
    {!current&&Object.keys(reports).length>0?<View style={s.card}><Text style={s.detail}>{Object.keys(reports).length} private feedback flag(s) stored only on your device. No report was sent online.</Text><Pressable accessibilityRole="button" onPress={clearFlags} style={s.secondary}><Text style={s.secondaryText}>Clear my local feedback flags</Text></Pressable></View>:null}
    <Text style={[s.detail,{marginVertical:16,fontSize:12}]}>Activity completion is self-reported. It is not a medical recovery score and does not monitor what you do in other apps.</Text>
  </View>;
 }
 const s=StyleSheet.create({pickCard:{backgroundColor:'#EEE8FF',padding:18,marginTop:14,borderRadius:21,borderWidth:1,borderColor:'#DED1FF'},pickEyebrow:{color:PURPLE,fontSize:11,fontWeight:'800',letterSpacing:1},pickTitle:{fontSize:20,color:INK,fontWeight:'800',marginTop:10},pickDetail:{fontSize:13,color:MUTED,lineHeight:20,marginTop:7},pickButton:{backgroundColor:PURPLE,minHeight:47,borderRadius:13,alignItems:'center',justifyContent:'center',marginTop:13},heading:{fontSize:23,color:INK,fontWeight:'800',marginTop:12},detail:{fontSize:14,lineHeight:21,color:MUTED,marginTop:7},topics:{flexDirection:'row',flexWrap:'wrap',gap:8,marginVertical:12},topic:{minHeight:44,justifyContent:'center',paddingVertical:10,paddingHorizontal:12,borderRadius:18,backgroundColor:'#E9E4F7'},card:{backgroundColor:'#fff',padding:17,marginTop:13,borderRadius:20},art:{height:145,borderRadius:15,alignItems:'center',justifyContent:'center'},emoji:{fontSize:54,textAlign:'center'},eyebrow:{marginTop:12,fontSize:11,color:PURPLE,fontWeight:'800'},title:{fontSize:19,fontWeight:'800',color:INK,marginTop:9},focus:{backgroundColor:'#F3EFFF',borderRadius:14,padding:16,marginTop:16},small:{color:PURPLE,fontSize:11,fontWeight:'800'},instruction:{fontSize:17,lineHeight:25,color:INK,fontWeight:'700',marginTop:8},primary:{backgroundColor:PURPLE,minHeight:48,borderRadius:14,alignItems:'center',justifyContent:'center',marginTop:14},white:{color:'#fff',fontWeight:'800'},secondary:{minHeight:48,alignItems:'center',justifyContent:'center',marginTop:4},secondaryText:{color:PURPLE,fontWeight:'700'},feedbackPanel:{backgroundColor:'#F3EFFF',borderRadius:14,padding:14,marginTop:8},feedbackTitle:{fontSize:16,color:INK,fontWeight:'800'},feedbackDetail:{fontSize:12,lineHeight:19,color:MUTED,marginTop:6},reasonButton:{backgroundColor:'#fff',borderRadius:12,minHeight:48,padding:12,justifyContent:'center',marginTop:8,borderWidth:1,borderColor:'#DED1FF'},reasonText:{color:INK,fontWeight:'700',fontSize:13}});
+

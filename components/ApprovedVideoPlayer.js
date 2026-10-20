@@ -24,6 +24,8 @@ export default function ApprovedVideoPlayer({video,onClose}){
  },[player]);
  return <View style={s.container}>
   <Text style={s.heading}>{video.title}</Text>
+  <Text style={s.note}>Creator / rights holder: {video.rightsHolder}</Text>
+  <Text style={s.note}>{video.attributionText}</Text>
   <Text style={s.note}>Tap play to begin. No autoplay, loop, or next video.</Text>
   {status==='loading'?<Text accessibilityLiveRegion="polite" style={s.note}>Loading video…</Text>:null}
   {status==='error'||retryFailed?<View accessibilityLiveRegion="polite">
@@ -37,3 +39,4 @@ export default function ApprovedVideoPlayer({video,onClose}){
  </View>;
 }
 const s=StyleSheet.create({container:{marginTop:12},heading:{fontSize:16,fontWeight:'800',color:'#21134C'},note:{fontSize:12,color:'#716C8A',marginVertical:9},video:{width:'100%',aspectRatio:16/9,backgroundColor:'#21134C',borderRadius:14},close:{minHeight:48,justifyContent:'center',alignItems:'center',marginTop:10},closeText:{color:'#6737F5',fontWeight:'800'},error:{color:'#AC3355',fontSize:13,lineHeight:20,marginVertical:6},retry:{minHeight:48,justifyContent:'center',alignItems:'center',backgroundColor:'#EEE8FF',borderRadius:12,marginBottom:10},retryText:{fontWeight:'800',color:'#6737F5'}});
+
